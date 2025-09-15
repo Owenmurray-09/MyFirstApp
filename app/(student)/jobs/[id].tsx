@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, Text, Image, Alert, Dimensions, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { theme } from '@/config/theme';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Tag } from '@/components/ui/Tag';
 import { Input } from '@/components/ui/Input';
 import { useJob } from '@/lib/hooks/useJobs';
-import { useApply } from '@/lib/hooks/useApplications';
+import { useApply, useCheckApplication } from '@/lib/hooks/useApplications';
 import { useComments, useAddComment } from '@/lib/hooks/useComments';
+import { useCreateThread } from '@/lib/hooks/useMessages';
+import { useAuth } from '@/lib/hooks/useAuth';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -19,11 +21,21 @@ interface CommentSectionProps {
 
 function CommentSection({ jobId }: CommentSectionProps) {
   const [newComment, setNewComment] = useState('');
+  const [hasWorkedHere, setHasWorkedHere] = useState(false); // TODO: Check if user has worked here
   const { comments, loading: commentsLoading } = useComments(jobId);
   const { addComment, loading: addingComment } = useAddComment();
 
   const handleAddComment = async () => {
     if (!newComment.trim()) return;
+
+    if (!hasWorkedHere) {
+      Alert.alert(
+        'Not Eligible',
+        'Only people who have worked at this company can leave reviews and comments.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
 
     try {
       await addComment(jobId, newComment.trim());
@@ -36,21 +48,36 @@ function CommentSection({ jobId }: CommentSectionProps) {
   return (
     <Card style={styles.commentsCard}>
       <Text style={styles.sectionTitle}>Reviews & Comments</Text>
-      
+      <Text style={styles.sectionSubtitle}>
+        Only people who have worked here can leave reviews
+      </Text>
+
       <View style={styles.addCommentSection}>
         <Input
           value={newComment}
           onChangeText={setNewComment}
-          placeholder="Share your experience or ask a question..."
+          placeholder={hasWorkedHere
+            ? "Share your experience working here..."
+            : "You must have worked here to leave a review"
+          }
           multiline
+          editable={hasWorkedHere}
         />
         <Button
-          title="Post Comment"
+          title="Post Review"
           onPress={handleAddComment}
           loading={addingComment}
-          disabled={!newComment.trim()}
-          style={styles.postCommentButton}
+          disabled={!newComment.trim() || !hasWorkedHere}
+          style={[
+            styles.postCommentButton,
+            !hasWorkedHere && styles.disabledButton
+          ]}
         />
+        {!hasWorkedHere && (
+          <Text style={styles.restrictionText}>
+            💼 Apply and complete work here to leave a review
+          </Text>
+        )}
       </View>
 
       {commentsLoading ? (
@@ -76,12 +103,16 @@ function CommentSection({ jobId }: CommentSectionProps) {
 
 export default function JobDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
   const [applicationNote, setApplicationNote] = useState('');
   const [showApplicationForm, setShowApplicationForm] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const { job, loading } = useJob(id as string);
   const { apply, loading: applying } = useApply();
+  const { hasApplied, loading: checkingApplication } = useCheckApplication(id as string);
+  const { createThread, loading: creatingThread } = useCreateThread();
+  const { profile } = useAuth();
 
   const renderImageCarousel = () => {
     if (!job?.images || job.images.length === 0) return null;
@@ -124,6 +155,11 @@ export default function JobDetailScreen() {
   };
 
   const handleApply = async () => {
+    if (hasApplied) {
+      Alert.alert('Already Applied', 'You have already applied for this position.');
+      return;
+    }
+
     if (!showApplicationForm) {
       setShowApplicationForm(true);
       return;
@@ -166,12 +202,12 @@ export default function JobDetailScreen() {
             )}
             
             <View style={styles.paymentInfo}>
-              <Tag 
-                label={job.is_paid 
-                  ? (job.stipend_amount ? `$${job.stipend_amount}` : 'Paid') 
-                  : 'Unpaid'
-                } 
-                variant={job.is_paid ? 'success' : 'warning'}
+              <Tag
+                label={job.is_paid
+                  ? (job.stipend_amount ? `$${job.stipend_amount}` : 'Paid Position')
+                  : 'Internship'
+                }
+                variant={job.is_paid ? 'success' : 'primary'}
               />
             </View>
             
@@ -196,8 +232,10 @@ export default function JobDetailScreen() {
           </Card>
           
           <Card style={styles.applicationCard}>
-            <Text style={styles.sectionTitle}>Apply for this Position</Text>
-            
+            <Text style={styles.sectionTitle}>
+              {job.is_paid ? 'Apply for this Position' : 'Apply as an Intern'}
+            </Text>
+
             {showApplicationForm ? (
               <View style={styles.applicationForm}>
                 <Input
@@ -207,10 +245,10 @@ export default function JobDetailScreen() {
                   multiline
                   placeholder="Tell the employer why you're interested in this position..."
                 />
-                
+
                 <View style={styles.applicationActions}>
                   <Button
-                    title="Submit Application"
+                    title={job.is_paid ? "Submit Application" : "Apply as Intern"}
                     onPress={handleApply}
                     loading={applying}
                   />
@@ -223,11 +261,47 @@ export default function JobDetailScreen() {
               </View>
             ) : (
               <Button
-                title="Apply Now"
+                title={hasApplied
+                  ? "Application Submitted"
+                  : (job.is_paid ? "Apply Now" : "Apply as an Intern")
+                }
                 onPress={handleApply}
-                style={styles.applyButton}
+                style={[styles.applyButton, hasApplied && styles.appliedButton]}
+                disabled={hasApplied || checkingApplication}
               />
             )}
+          </Card>
+
+          <Card style={styles.contactCard}>
+            <Text style={styles.sectionTitle}>Contact Employer</Text>
+            <Text style={styles.contactDescription}>
+              Have questions about this {job.is_paid ? 'position' : 'internship'}?
+              Start a conversation with the employer.
+            </Text>
+            <Button
+              title="Send Message"
+              onPress={async () => {
+                if (!job?.companies?.owner_user_id || !profile?.id) {
+                  Alert.alert('Error', 'Unable to start conversation');
+                  return;
+                }
+
+                try {
+                  const thread = await createThread(
+                    job.id,
+                    job.companies.owner_user_id,
+                    profile.id
+                  );
+
+                  router.push(`/(student)/messages/${thread.id}`);
+                } catch (error: any) {
+                  Alert.alert('Error', error.message);
+                }
+              }}
+              variant="outline"
+              style={styles.contactButton}
+              loading={creatingThread}
+            />
           </Card>
           
           <CommentSection jobId={id as string} />
@@ -353,6 +427,10 @@ const styles = StyleSheet.create({
   applyButton: {
     marginTop: theme.spacing.sm,
   },
+  appliedButton: {
+    backgroundColor: theme.colors.success,
+    opacity: 0.7,
+  },
   commentsCard: {
     padding: theme.spacing.lg,
     marginBottom: theme.spacing.lg,
@@ -392,5 +470,34 @@ const styles = StyleSheet.create({
   commentDate: {
     fontSize: theme.fontSize.sm,
     color: theme.colors.textSecondary,
+  },
+  contactCard: {
+    padding: theme.spacing.lg,
+    marginBottom: theme.spacing.lg,
+  },
+  contactDescription: {
+    fontSize: theme.fontSize.md,
+    color: theme.colors.textSecondary,
+    lineHeight: 20,
+    marginBottom: theme.spacing.md,
+  },
+  contactButton: {
+    marginTop: theme.spacing.sm,
+  },
+  sectionSubtitle: {
+    fontSize: theme.fontSize.sm,
+    color: theme.colors.textSecondary,
+    fontStyle: 'italic',
+    marginBottom: theme.spacing.md,
+  },
+  disabledButton: {
+    opacity: 0.5,
+  },
+  restrictionText: {
+    fontSize: theme.fontSize.sm,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+    marginTop: theme.spacing.sm,
+    fontStyle: 'italic',
   },
 });

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { Database } from '@/types/db';
 
@@ -59,11 +59,35 @@ export function useJobs(filters: JobFilters = {}, signal?: AbortSignal): UseJobs
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Stabilize filters to prevent infinite re-renders
+  const stableFilters = useMemo(() => ({
+    keyword: filters.keyword || '',
+    paidOnly: filters.paidOnly || false,
+    location: filters.location || '',
+    tags: filters.tags || [],
+  }), [filters.keyword, filters.paidOnly, filters.location, filters.tags]);
+
   const loadJobs = useCallback(async () => {
     setError(null);
     setLoading(true);
 
     try {
+      // First test if we can access the jobs table at all
+      const { data: testData, error: testError } = await supabase
+        .from('jobs')
+        .select('count')
+        .limit(1);
+
+      if (testError) {
+        // If jobs table doesn't exist or has permission issues, return empty array
+        if (testError.code === '42P01' || testError.code === 'PGRST301') {
+          setJobs([]);
+          return;
+        }
+        throw testError;
+      }
+
+      // Now try the full query
       let query = supabase
         .from('jobs')
         .select(`
@@ -78,22 +102,22 @@ export function useJobs(filters: JobFilters = {}, signal?: AbortSignal): UseJobs
         .eq('status', 'open')
         .order('created_at', { ascending: false });
 
-      if (filters.keyword) {
+      if (stableFilters.keyword) {
         query = query.or(
-          `title.ilike.%${filters.keyword}%,description.ilike.%${filters.keyword}%`
+          `title.ilike.%${stableFilters.keyword}%,description.ilike.%${stableFilters.keyword}%`
         );
       }
 
-      if (filters.paidOnly) {
+      if (stableFilters.paidOnly) {
         query = query.eq('is_paid', true);
       }
 
-      if (filters.location) {
-        query = query.ilike('location', `%${filters.location}%`);
+      if (stableFilters.location) {
+        query = query.ilike('location', `%${stableFilters.location}%`);
       }
 
-      if (filters.tags && filters.tags.length > 0) {
-        query = query.overlaps('tags', filters.tags);
+      if (stableFilters.tags && stableFilters.tags.length > 0) {
+        query = query.overlaps('tags', stableFilters.tags);
       }
 
       const { data, error } = await query.abortSignal(signal);
@@ -103,10 +127,11 @@ export function useJobs(filters: JobFilters = {}, signal?: AbortSignal): UseJobs
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') return;
       setError(err instanceof Error ? err.message : 'Failed to load jobs');
+      setJobs([]); // Set empty array on error to prevent flickering
     } finally {
       setLoading(false);
     }
-  }, [filters, signal]);
+  }, [stableFilters, signal]);
 
   useEffect(() => {
     loadJobs();

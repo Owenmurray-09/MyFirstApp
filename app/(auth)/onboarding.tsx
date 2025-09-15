@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/lib/hooks/useAuth';
 import { theme } from '@/config/theme';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -14,6 +15,7 @@ const STUDENT_INTERESTS = [
 ];
 
 export default function OnboardingScreen() {
+  const { upsertProfile, signOut } = useAuth();
   const [step, setStep] = useState(1);
   const [role, setRole] = useState<'student' | 'employer' | null>(null);
   const [name, setName] = useState('');
@@ -25,6 +27,15 @@ export default function OnboardingScreen() {
   const handleRoleSelection = (selectedRole: 'student' | 'employer') => {
     setRole(selectedRole);
     setStep(2);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      console.log('Logged out from onboarding');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
   const handleInterestToggle = (interest: string) => {
@@ -43,43 +54,56 @@ export default function OnboardingScreen() {
 
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) throw new Error('No user found');
+      console.log('Starting onboarding completion...', { role, name });
 
-      // Create profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .upsert({
-          id: user.id,
-          role,
-          name: name.trim(),
-          bio: bio.trim() || null,
-          location: location.trim() || null,
-          interests: role === 'student' ? interests : [],
-        });
+      // Use the upsertProfile from useAuth hook to update profile and refresh state
+      await upsertProfile({
+        role,
+        name: name.trim(),
+        bio: bio.trim() || null,
+        location: location.trim() || null,
+        interests: role === 'student' ? interests : [],
+      });
 
-      if (profileError) throw profileError;
+      console.log('Profile upserted successfully');
 
       // If student, also create preferences record
       if (role === 'student' && interests.length > 0) {
-        const { error: prefsError } = await supabase
-          .from('student_preferences')
-          .upsert({
-            student_user_id: user.id,
-            interest_tags: interests,
-          });
-        
-        if (prefsError) throw prefsError;
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { error: prefsError } = await supabase
+            .from('student_preferences')
+            .upsert({
+              student_user_id: user.id,
+              interest_tags: interests,
+            });
+
+          if (prefsError) {
+            console.warn('Failed to create preferences:', prefsError);
+          } else {
+            console.log('Student preferences created');
+          }
+        }
       }
 
-      // Navigate to appropriate home screen
-      if (role === 'student') {
-        router.replace('/(student)/');
-      } else {
-        router.replace('/(employer)/');
-      }
+      // Navigate directly to the appropriate dashboard since we know the role
+      console.log('Navigating to dashboard for role:', role);
+
+      // Add a delay to ensure profile state is updated before navigation
+      setTimeout(() => {
+        if (role === 'student') {
+          console.log('Attempting navigation to /(student)/');
+          router.replace('/(student)/');
+        } else if (role === 'employer') {
+          console.log('Attempting navigation to /(employer)/');
+          router.replace('/(employer)/');
+        } else {
+          console.log('Fallback navigation to /');
+          router.replace('/');
+        }
+      }, 500);
     } catch (error: any) {
+      console.error('Onboarding completion error:', error);
       Alert.alert('Error', error.message);
     } finally {
       setLoading(false);
@@ -195,7 +219,12 @@ export default function OnboardingScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.header}>
-        <Text style={styles.title}>Welcome!</Text>
+        <View style={styles.headerTop}>
+          <Text style={styles.title}>Welcome!</Text>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Text style={styles.logoutText}>Logout</Text>
+          </TouchableOpacity>
+        </View>
         <View style={styles.progress}>
           <View style={[styles.progressStep, step >= 1 && styles.progressStepActive]} />
           <View style={[styles.progressStep, step >= 2 && styles.progressStepActive]} />
@@ -220,11 +249,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: theme.spacing.xl,
   },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: theme.spacing.lg,
+  },
   title: {
     fontSize: theme.fontSize.xxxl,
     fontWeight: theme.fontWeight.bold,
     color: theme.colors.text,
-    marginBottom: theme.spacing.lg,
+  },
+  logoutButton: {
+    backgroundColor: theme.colors.error || '#EF4444',
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    borderRadius: 8,
+  },
+  logoutText: {
+    color: 'white',
+    fontSize: theme.fontSize.sm,
+    fontWeight: theme.fontWeight.medium,
   },
   progress: {
     flexDirection: 'row',

@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, StyleSheet, FlatList, RefreshControl, Text } from 'react-native';
+import { View, StyleSheet, FlatList, RefreshControl, Text, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { theme } from '@/config/theme';
 import { JobCard } from '@/components/ui/JobCard';
 import { JobFilters } from '@/components/ui/JobFilters';
 import { useJobs } from '@/lib/hooks/useJobs';
+import { useAuth } from '@/lib/hooks/useAuth';
 
 interface Job {
   id: string;
@@ -30,6 +31,7 @@ interface Filters {
 }
 
 export default function StudentHomeScreen() {
+  const { signOut, profile } = useAuth();
   const [filters, setFilters] = useState<Filters>({
     keyword: '',
     paidOnly: false,
@@ -37,7 +39,7 @@ export default function StudentHomeScreen() {
     tags: [],
   });
 
-  const { jobs, loading, refresh } = useJobs({
+  const { jobs, loading, error, refresh } = useJobs({
     keyword: filters.keyword,
     paidOnly: filters.paidOnly,
     location: filters.location,
@@ -74,16 +76,29 @@ export default function StudentHomeScreen() {
 
   const renderEmpty = () => (
     <View style={styles.empty}>
-      <Text style={styles.emptyTitle}>No jobs found</Text>
+      <Text style={styles.emptyTitle}>
+        {error ? 'Unable to load jobs' : 'No jobs found'}
+      </Text>
       <Text style={styles.emptyText}>
-        {filters.keyword || filters.paidOnly || filters.location || filters.tags.length > 0
-          ? 'Try adjusting your filters'
-          : 'Check back later for new opportunities'}
+        {error
+          ? 'There was an issue loading job data. Please try again later.'
+          : filters.keyword || filters.paidOnly || filters.location || filters.tags.length > 0
+            ? 'Try adjusting your filters'
+            : 'Check back later for new opportunities'}
       </Text>
     </View>
   );
 
-  if (loading) {
+  // Only show loading screen on initial load, not on refresh
+  const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!loading && !hasInitiallyLoaded) {
+      setHasInitiallyLoaded(true);
+    }
+  }, [loading, hasInitiallyLoaded]);
+
+  if (loading && !hasInitiallyLoaded) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loading}>
@@ -93,11 +108,30 @@ export default function StudentHomeScreen() {
     );
   }
 
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      console.log('Logged out successfully');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Find Jobs</Text>
-        <Text style={styles.subtitle}>{jobs.length} opportunities available</Text>
+        <View style={styles.headerTop}>
+          <View>
+            <Text style={styles.title}>Find Jobs</Text>
+            <Text style={styles.subtitle}>{jobs.length} opportunities available</Text>
+          </View>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Text style={styles.logoutText}>Logout</Text>
+          </TouchableOpacity>
+        </View>
+        {profile && (
+          <Text style={styles.welcomeText}>Welcome back, {profile.name}!</Text>
+        )}
       </View>
       
       <JobFilters 
@@ -129,6 +163,12 @@ const styles = StyleSheet.create({
     padding: theme.spacing.lg,
     paddingBottom: theme.spacing.md,
   },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: theme.spacing.sm,
+  },
   title: {
     fontSize: theme.fontSize.xxxl,
     fontWeight: theme.fontWeight.bold,
@@ -138,6 +178,22 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: theme.fontSize.md,
     color: theme.colors.textSecondary,
+  },
+  welcomeText: {
+    fontSize: theme.fontSize.lg,
+    color: theme.colors.primary,
+    fontWeight: theme.fontWeight.medium,
+  },
+  logoutButton: {
+    backgroundColor: theme.colors.error || '#EF4444',
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    borderRadius: 8,
+  },
+  logoutText: {
+    color: 'white',
+    fontSize: theme.fontSize.sm,
+    fontWeight: theme.fontWeight.medium,
   },
   loading: {
     flex: 1,
