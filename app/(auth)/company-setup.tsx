@@ -7,9 +7,11 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/lib/hooks/useAuth';
 
 export default function CompanySetupScreen() {
   const router = useRouter();
+  const { profile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [companySaved, setCompanySaved] = useState(false);
   const [formData, setFormData] = useState({
@@ -56,8 +58,28 @@ export default function CompanySetupScreen() {
   };
 
   const handleContinueToDashboard = () => {
-    console.log('Navigating to employer dashboard');
-    router.replace('/(employer)/');
+    console.log('=== COMPANY SETUP CONTINUE CLICKED ===');
+    console.log('Profile state:', profile);
+    console.log('Profile role:', profile?.role);
+    console.log('Profile exists:', !!profile);
+    console.log('Current window.location:', window?.location?.href);
+
+    // Check if profile is properly loaded before navigation
+    if (profile?.role === 'employer') {
+      console.log('✅ Profile confirmed as employer, navigating immediately...');
+      console.log('🏢 Navigating to: /(employer)/');
+      router.replace('/(employer)/');
+      console.log('🏢 Employer dashboard navigation completed');
+    } else {
+      console.log('⏰ Profile not yet updated (role=' + profile?.role + '), adding delay...');
+      // Add delay if profile hasn't updated yet
+      setTimeout(() => {
+        console.log('⏰ Delayed navigation executing...');
+        console.log('🏢 Delayed navigating to: /(employer)/');
+        router.replace('/(employer)/');
+        console.log('🏢 Delayed employer dashboard navigation completed');
+      }, 1000);
+    }
   };
 
   return (
@@ -162,6 +184,12 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: theme.fontSize.md,
     color: theme.colors.textSecondary,
+  },
+  debugInfo: {
+    fontSize: theme.fontSize.sm,
+    color: theme.colors.primary,
+    marginTop: theme.spacing.xs,
+    fontFamily: 'monospace',
   },
   formCard: {
     margin: theme.spacing.lg,

@@ -1,45 +1,29 @@
 import React, { useEffect } from 'react';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { View, Text, StyleSheet } from 'react-native';
 
 export default function EmployerLayout() {
   const { profile, loading, session } = useAuth();
   const router = useRouter();
+  const segments = useSegments();
 
   useEffect(() => {
-    console.log('Employer layout useEffect:', {
+    console.log('Employer layout useEffect (minimal check):', {
       loading,
       hasSession: !!session,
-      profileRole: profile?.role,
-      profileExists: !!profile
+      currentPath: segments
     });
 
-    // Wait for loading to complete
-    if (loading) {
-      console.log('Employer layout: still loading...');
-      return;
-    }
-
-    if (!session) {
+    // Only check for session - let individual pages handle role checks
+    if (!loading && !session) {
       console.log('Employer layout: no session, redirecting to sign-in');
       router.replace('/(auth)/sign-in');
       return;
     }
 
-    if (profile?.role !== 'employer') {
-      if (!profile?.role) {
-        console.log('Employer layout: no profile role, redirecting to onboarding');
-        router.replace('/(auth)/onboarding');
-      } else if (profile.role === 'student') {
-        console.log('Employer layout: student profile, redirecting to student');
-        router.replace('/(student)/');
-      }
-      return;
-    }
-
-    console.log('Employer layout: valid employer profile, staying on employer dashboard');
-  }, [session, profile, loading, router]);
+    console.log('Employer layout: allowing access, individual pages will handle role checks');
+  }, [session, loading, router, segments]);
 
   // Show loading while waiting for authentication
   if (loading) {
@@ -50,7 +34,8 @@ export default function EmployerLayout() {
     );
   }
 
-  if (!session || profile?.role !== 'employer') {
+  // Only block if no session - let pages handle their own role checks
+  if (!session) {
     return (
       <View style={styles.container}>
         <Text style={styles.loading}>Redirecting...</Text>

@@ -35,6 +35,7 @@ export default function IndexScreen() {
         profile,
         hasProfile: !!profile,
         role: profile?.role,
+        profileName: profile?.name,
         currentPath: window?.location?.pathname
       });
 
