@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '@/lib/hooks/useAuth';
@@ -12,7 +12,39 @@ export default function SignInScreen() {
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
-  const { signInWithEmail, signUpWithEmail, loading, error } = useAuth();
+  const { signInWithEmail, signUpWithEmail, loading, error, session, profile } = useAuth();
+
+  // Check if user is already authenticated and redirect appropriately
+  useEffect(() => {
+    // Don't do anything while still loading
+    if (loading) {
+      return;
+    }
+
+    if (session && profile) {
+      console.log('User already authenticated, redirecting to dashboard...');
+      if (profile.role === 'student') {
+        router.replace('/(student)/');
+      } else if (profile.role === 'employer') {
+        router.replace('/(employer)/');
+      } else {
+        // If no role set yet, redirect to onboarding
+        router.replace('/(auth)/onboarding');
+      }
+    } else if (session && !profile) {
+      // Give a bit more time for profile to load after session is restored
+      // This handles the case where session loads faster than profile
+      const timer = setTimeout(() => {
+        if (!profile) {
+          // Only redirect to onboarding if profile still doesn't exist after delay
+          console.log('User authenticated but no profile after delay, redirecting to onboarding...');
+          router.replace('/(auth)/onboarding');
+        }
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [session, profile, loading, router]);
 
   const handleAuth = async () => {
     if (!email || !password) {
@@ -35,8 +67,7 @@ export default function SignInScreen() {
         console.log('Attempting sign in...');
         await signInWithEmail(email, password);
         console.log('Sign in completed successfully');
-        // Navigate to index which will handle routing based on profile
-        router.replace('/');
+        // The useEffect hook will handle navigation once the profile is loaded
       }
     } catch (error: any) {
       console.error('Auth error:', error);
