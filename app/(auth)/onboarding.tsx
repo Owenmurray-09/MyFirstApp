@@ -23,6 +23,7 @@ export default function OnboardingScreen() {
   const [location, setLocation] = useState('');
   const [interests, setInterests] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [profileSaved, setProfileSaved] = useState(false);
 
   const handleRoleSelection = (selectedRole: 'student' | 'employer') => {
     setRole(selectedRole);
@@ -33,6 +34,7 @@ export default function OnboardingScreen() {
     try {
       await signOut();
       console.log('Logged out from onboarding');
+      router.replace('/(auth)/sign-in');
     } catch (error) {
       console.error('Logout error:', error);
     }
@@ -46,7 +48,7 @@ export default function OnboardingScreen() {
     );
   };
 
-  const handleComplete = async () => {
+  const handleSaveProfile = async () => {
     if (!role || !name.trim()) {
       Alert.alert('Error', 'Please fill in all required fields');
       return;
@@ -54,7 +56,7 @@ export default function OnboardingScreen() {
 
     setLoading(true);
     try {
-      console.log('Starting onboarding completion...', { role, name });
+      console.log('Starting profile save...', { role, name });
 
       // Use the upsertProfile from useAuth hook to update profile and refresh state
       await upsertProfile({
@@ -86,27 +88,32 @@ export default function OnboardingScreen() {
         }
       }
 
-      // Navigate directly to the appropriate dashboard since we know the role
-      console.log('Navigating to dashboard for role:', role);
-
-      // Add a delay to ensure profile state is updated before navigation
-      setTimeout(() => {
-        if (role === 'student') {
-          console.log('Attempting navigation to /(student)/');
-          router.replace('/(student)/');
-        } else if (role === 'employer') {
-          console.log('Attempting navigation to /(employer)/');
-          router.replace('/(employer)/');
-        } else {
-          console.log('Fallback navigation to /');
-          router.replace('/');
-        }
-      }, 500);
+      // Profile saved successfully - enable continue button
+      setProfileSaved(true);
+      console.log('Profile saved successfully, ready to continue');
     } catch (error: any) {
-      console.error('Onboarding completion error:', error);
+      console.error('Profile save error:', error);
       Alert.alert('Error', error.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleContinue = () => {
+    console.log('=== ONBOARDING CONTINUE CLICKED ===');
+    console.log('Current role:', role);
+    console.log('Current window.location:', window?.location?.href);
+
+    if (role === 'student') {
+      console.log('🎓 Navigating student to: /(student)/');
+      router.replace('/(student)/');
+      console.log('🎓 Student navigation completed');
+    } else if (role === 'employer') {
+      console.log('💼 Navigating employer to: /(auth)/company-setup');
+      router.replace('/(auth)/company-setup');
+      console.log('💼 Employer navigation completed');
+    } else {
+      console.error('❌ Unknown role, cannot navigate:', role);
     }
   };
 
@@ -197,21 +204,43 @@ export default function OnboardingScreen() {
           </View>
         )}
         
-        <View style={styles.formActions}>
-          <Button
-            title="Complete Setup"
-            onPress={handleComplete}
-            loading={loading}
-            disabled={!name.trim()}
-          />
-          
-          <Button
-            title="Back"
-            onPress={() => setStep(1)}
-            variant="outline"
-            style={styles.backButton}
-          />
-        </View>
+        {!profileSaved ? (
+          <View style={styles.formActions}>
+            <Button
+              title="Save Profile"
+              onPress={handleSaveProfile}
+              loading={loading}
+              disabled={!name.trim()}
+            />
+
+            <Button
+              title="Back"
+              onPress={() => setStep(1)}
+              variant="outline"
+              style={styles.backButton}
+            />
+          </View>
+        ) : (
+          <View style={styles.successSection}>
+            <Text style={styles.successTitle}>✅ Profile Saved Successfully!</Text>
+            <Text style={styles.successMessage}>
+              Your {role} profile has been created. {role === 'employer' ? 'Next, set up your company profile to start posting jobs.' : "You're ready to get started!"}
+            </Text>
+
+            <Button
+              title={role === 'employer' ? 'Set Up Company' : 'Continue to Dashboard'}
+              onPress={handleContinue}
+              style={styles.continueButton}
+            />
+
+            <Button
+              title="Edit Profile"
+              onPress={() => setProfileSaved(false)}
+              variant="outline"
+              style={styles.editButton}
+            />
+          </View>
+        )}
       </Card>
     </View>
   );
@@ -344,5 +373,31 @@ const styles = StyleSheet.create({
   },
   backButton: {
     marginTop: theme.spacing.sm,
+  },
+  successSection: {
+    alignItems: 'center',
+    padding: theme.spacing.lg,
+    marginTop: theme.spacing.lg,
+  },
+  successTitle: {
+    fontSize: theme.fontSize.xl,
+    fontWeight: theme.fontWeight.bold,
+    color: theme.colors.primary,
+    marginBottom: theme.spacing.sm,
+    textAlign: 'center',
+  },
+  successMessage: {
+    fontSize: theme.fontSize.md,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: theme.spacing.xl,
+    lineHeight: 22,
+  },
+  continueButton: {
+    width: '100%',
+    marginBottom: theme.spacing.md,
+  },
+  editButton: {
+    width: '100%',
   },
 });

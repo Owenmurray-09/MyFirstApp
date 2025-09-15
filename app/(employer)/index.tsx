@@ -37,6 +37,32 @@ export default function EmployerHomeScreen() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // First check if user has a company
+      const { data: company, error: companyError } = await supabase
+        .from('companies')
+        .select('id')
+        .eq('owner_user_id', user.id)
+        .single();
+
+      if (companyError && companyError.code === 'PGRST116') {
+        // No company found, redirect to setup
+        console.log('No company found, redirecting to company setup');
+        router.replace('/(auth)/company-setup');
+        return;
+      }
+
+      if (companyError) {
+        console.error('Company query error:', companyError);
+        // If we get a 406 or other permissions error, assume company exists and continue
+        if (companyError.code === 'PGRST301' || companyError.message?.includes('406')) {
+          console.log('Database permissions issue, assuming company exists and continuing');
+          setJobs([]);
+          return;
+        }
+        throw companyError;
+      }
+
+      // Now load jobs
       const { data, error } = await supabase
         .from('jobs')
         .select(`
@@ -61,6 +87,8 @@ export default function EmployerHomeScreen() {
       setJobs(data || []);
     } catch (error) {
       console.error('Error loading jobs:', error);
+    } finally {
+      setLoading(false);
     }
   };
 

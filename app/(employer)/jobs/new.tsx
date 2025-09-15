@@ -124,7 +124,7 @@ export default function NewJobScreen() {
       setErrors({});
       return true;
     } catch (error) {
-      if (error instanceof z.ZodError) {
+      if (error instanceof z.ZodError && error.errors) {
         const newErrors: Record<string, string> = {};
         error.errors.forEach((err) => {
           if (err.path[0]) {

@@ -18,9 +18,9 @@ export default function IndexScreen() {
       fullProfile: profile
     });
 
-    // Wait for loading to complete AND for profile data when there's a session
-    if (loading || (!profile && session)) {
-      console.log('Index: Still loading or waiting for profile data...');
+    // Wait for loading to complete
+    if (loading) {
+      console.log('Index: Still loading...');
       return;
     }
 
@@ -35,6 +35,7 @@ export default function IndexScreen() {
         profile,
         hasProfile: !!profile,
         role: profile?.role,
+        profileName: profile?.name,
         currentPath: window?.location?.pathname
       });
 
@@ -58,8 +59,8 @@ export default function IndexScreen() {
     }
   }, [session, profile, loading, router]);
 
-  // Show loading while waiting for authentication or profile data
-  if (loading || (!profile && session)) {
+  // Show loading while waiting for authentication
+  if (loading) {
     return (
       <View style={styles.container}>
         <Text style={styles.loading}>Loading...</Text>

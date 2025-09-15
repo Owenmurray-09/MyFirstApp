@@ -30,69 +30,46 @@ export function useAuth(): UseAuthReturn {
   // Load profile data when session changes
   const loadProfile = useCallback(async (userId: string) => {
     console.log('loadProfile called for user:', userId);
-    console.log('Current session state:', !!session);
 
     try {
-      // First, let's test if we can access the table at all
-      console.log('Testing basic table access...');
-      const { data: testData, error: testError } = await supabase
-        .from('profiles')
-        .select('count')
-        .limit(1);
-
-      console.log('Basic table access test:', { testData, testError });
-
-      if (testError) {
-        console.error('Cannot access profiles table:', testError);
-        throw testError;
-      }
-
-      // Now try the actual profile query with minimal fields
-      console.log('Querying for specific profile...');
-      const { data: profiles, error } = await supabase
+      // Simple direct query for the user's profile
+      const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', userId);
+        .eq('id', userId)
+        .maybeSingle(); // Use maybeSingle to handle no results gracefully
 
-      console.log('Profile query result:', { profiles, error, userId });
-
-      // Convert to single profile format
-      const profile = profiles && profiles.length > 0 ? profiles[0] : null;
-
-      console.log('Final profile result:', profile);
+      console.log('Profile query result:', { profile, error, userId });
 
       if (error) {
-        console.log('Profile query error details:', {
-          code: error.code,
-          message: error.message,
-          details: error.details,
-          hint: error.hint
-        });
-      }
+        console.error('Profile query error:', error);
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-        // Check for common database setup issues
+        // Check for database setup issues
         if (error.code === '42P01') {
-          throw new Error('Database not set up: Please run the schema.sql in Supabase SQL Editor');
+          setError('Database not set up: Please run the schema.sql in Supabase SQL Editor');
+          return;
         }
         if (error.code === 'PGRST301') {
-          throw new Error('JWT token invalid - auth issue');
+          setError('JWT token invalid - auth issue');
+          return;
         }
-        console.error('Unhandled profile query error:', error);
-        throw error;
+
+        // For other errors, set error and continue
+        setError(error.message);
+        setProfile(null);
+        return;
       }
 
-      // PGRST116 means no profile exists yet - this is normal for new users
-      if (error && error.code === 'PGRST116') {
-        console.log('No profile found - user needs onboarding');
-        setProfile(null);
-      } else {
-        console.log('Profile loaded successfully:', profile?.role);
-        setProfile(profile);
-      }
+      // Set profile (null if no profile exists, which is normal for new users)
+      setProfile(profile);
+      console.log('Profile loaded:', profile ? `Found profile for ${profile.name}` : 'No profile (new user needs onboarding)');
+
+      // Clear any previous errors
+      setError(null);
     } catch (err) {
-      console.error('Error loading profile:', err);
+      console.error('Profile loading error:', err);
       setError(err instanceof Error ? err.message : 'Failed to load profile');
+      setProfile(null);
     }
   }, []);
 
