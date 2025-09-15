@@ -16,6 +16,8 @@ interface Profile {
   name: string;
   bio: string | null;
   location: string | null;
+  phone: string | null;
+  experience: string | null;
   interests: string[];
   avatar_url: string | null;
   daily_digest_enabled: boolean;
@@ -29,6 +31,8 @@ export default function ProfileScreen() {
     name: '',
     bio: '',
     location: '',
+    phone: '',
+    experience: '',
   });
 
   useEffect(() => {
@@ -53,6 +57,8 @@ export default function ProfileScreen() {
         name: data.name || '',
         bio: data.bio || '',
         location: data.location || '',
+        phone: data.phone || '',
+        experience: data.experience || '',
       });
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -71,6 +77,8 @@ export default function ProfileScreen() {
           name: editForm.name.trim(),
           bio: editForm.bio.trim() || null,
           location: editForm.location.trim() || null,
+          phone: editForm.phone.trim() || null,
+          // experience: editForm.experience.trim() || null, // TODO: Enable after adding experience column to DB
         })
         .eq('id', profile.id);
 
@@ -141,7 +149,22 @@ export default function ProfileScreen() {
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => {
+              if (profile?.role === 'student') {
+                router.replace('/(student)/');
+              } else if (profile?.role === 'employer') {
+                router.replace('/(employer)/');
+              } else {
+                router.back();
+              }
+            }}
+          >
+            <Text style={styles.backButtonText}>← Back</Text>
+          </TouchableOpacity>
           <Text style={styles.title}>Profile</Text>
+          <View style={styles.headerSpacer} />
         </View>
 
         <Card style={styles.profileCard}>
@@ -159,6 +182,9 @@ export default function ProfileScreen() {
               {profile.location && (
                 <Text style={styles.profileLocation}>📍 {profile.location}</Text>
               )}
+              {profile.phone && (
+                <Text style={styles.profileLocation}>📞 {profile.phone}</Text>
+              )}
             </View>
           </View>
 
@@ -166,6 +192,15 @@ export default function ProfileScreen() {
             <View style={styles.bioSection}>
               <Text style={styles.sectionTitle}>About</Text>
               <Text style={styles.bioText}>{profile.bio}</Text>
+            </View>
+          )}
+
+          {profile.experience && (
+            <View style={styles.bioSection}>
+              <Text style={styles.sectionTitle}>
+                {profile.role === 'student' ? 'Experience & Education' : 'Professional Experience'}
+              </Text>
+              <Text style={styles.bioText}>{profile.experience}</Text>
             </View>
           )}
 
@@ -229,14 +264,33 @@ export default function ProfileScreen() {
               multiline
               placeholder="Tell us about yourself..."
             />
-            
+
+            <Input
+              label={`${profile?.role === 'student' ? 'Experience & Education' : 'Professional Experience'} (Optional)`}
+              value={editForm.experience}
+              onChangeText={(text) => setEditForm(prev => ({ ...prev, experience: text }))}
+              multiline
+              placeholder={profile?.role === 'student'
+                ? 'Previous jobs, internships, volunteer work, schools attended, relevant coursework...'
+                : 'Previous roles, companies, achievements, education...'
+              }
+            />
+
             <Input
               label="Location"
               value={editForm.location}
               onChangeText={(text) => setEditForm(prev => ({ ...prev, location: text }))}
               placeholder="City, State"
             />
-            
+
+            <Input
+              label="Phone"
+              value={editForm.phone}
+              onChangeText={(text) => setEditForm(prev => ({ ...prev, phone: text }))}
+              placeholder="Your phone number"
+              keyboardType="phone-pad"
+            />
+
             <View style={styles.editActions}>
               <Button title="Save Changes" onPress={handleSave} />
               <Button 
@@ -286,8 +340,22 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     padding: theme.spacing.lg,
     paddingBottom: theme.spacing.md,
+  },
+  backButton: {
+    padding: theme.spacing.sm,
+  },
+  backButtonText: {
+    fontSize: theme.fontSize.lg,
+    color: theme.colors.primary,
+    fontWeight: theme.fontWeight.medium,
+  },
+  headerSpacer: {
+    width: 60, // Same width as back button to center the title
   },
   title: {
     fontSize: theme.fontSize.xxxl,

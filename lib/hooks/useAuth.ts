@@ -29,6 +29,7 @@ export function useAuth(): UseAuthReturn {
 
   // Load profile data when session changes
   const loadProfile = useCallback(async (userId: string) => {
+    console.log('=== LOAD PROFILE DEBUG ===');
     console.log('loadProfile called for user:', userId);
 
     try {
@@ -39,7 +40,10 @@ export function useAuth(): UseAuthReturn {
         .eq('id', userId)
         .maybeSingle(); // Use maybeSingle to handle no results gracefully
 
-      console.log('Profile query result:', { profile, error, userId });
+      console.log('Supabase profile query result:');
+      console.log('- Profile data:', profile);
+      console.log('- Error:', error);
+      console.log('- User ID searched:', userId);
 
       if (error) {
         console.error('Profile query error:', error);
@@ -62,7 +66,19 @@ export function useAuth(): UseAuthReturn {
 
       // Set profile (null if no profile exists, which is normal for new users)
       setProfile(profile);
-      console.log('Profile loaded:', profile ? `Found profile for ${profile.name}` : 'No profile (new user needs onboarding)');
+
+      if (profile) {
+        console.log('✅ Profile loaded successfully:');
+        console.log('- Name:', profile.name);
+        console.log('- Role:', profile.role);
+        console.log('- Bio:', profile.bio);
+        console.log('- Location:', profile.location);
+        console.log('- Interests:', profile.interests);
+        console.log('- Full profile:', profile);
+      } else {
+        console.log('❌ No profile found - user needs onboarding');
+      }
+      console.log('===========================');
 
       // Clear any previous errors
       setError(null);
@@ -195,7 +211,8 @@ export function useAuth(): UseAuthReturn {
         ...data,
       };
 
-      console.log('upsertProfile: inserting data:', profileData);
+      console.log('=== UPSERT PROFILE DEBUG ===');
+      console.log('Profile data being saved:', profileData);
 
       const { data: updatedProfile, error } = await supabase
         .from('profiles')
@@ -203,9 +220,16 @@ export function useAuth(): UseAuthReturn {
         .select()
         .single();
 
-      if (error) throw error;
+      console.log('Supabase upsert result:', { updatedProfile, error });
 
-      console.log('upsertProfile: profile updated successfully:', updatedProfile);
+      if (error) {
+        console.error('❌ UPSERT ERROR:', error);
+        throw error;
+      }
+
+      console.log('✅ Profile upserted successfully:', updatedProfile);
+      console.log('Setting profile state to:', updatedProfile);
+      console.log('=============================');
       setProfile(updatedProfile);
     } catch (err) {
       console.error('upsertProfile error:', err);

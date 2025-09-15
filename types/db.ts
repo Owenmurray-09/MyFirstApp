@@ -12,6 +12,8 @@ export interface Database {
           bio: string | null;
           interests: string[];
           location: string | null;
+          phone: string | null;
+          experience: string | null;
           avatar_url: string | null;
           created_at: string;
         };
@@ -22,6 +24,8 @@ export interface Database {
           bio?: string | null;
           interests?: string[];
           location?: string | null;
+          phone?: string | null;
+          experience?: string | null;
           avatar_url?: string | null;
           created_at?: string;
         };
@@ -32,6 +36,8 @@ export interface Database {
           bio?: string | null;
           interests?: string[];
           location?: string | null;
+          phone?: string | null;
+          experience?: string | null;
           avatar_url?: string | null;
           created_at?: string;
         };

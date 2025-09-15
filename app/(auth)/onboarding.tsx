@@ -21,6 +21,8 @@ export default function OnboardingScreen() {
   const [name, setName] = useState('');
   const [bio, setBio] = useState('');
   const [location, setLocation] = useState('');
+  const [phone, setPhone] = useState('');
+  const [experience, setExperience] = useState('');
   const [interests, setInterests] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
@@ -56,18 +58,24 @@ export default function OnboardingScreen() {
 
     setLoading(true);
     try {
-      console.log('Starting profile save...', { role, name });
-
-      // Use the upsertProfile from useAuth hook to update profile and refresh state
-      await upsertProfile({
+      const profileData = {
         role,
         name: name.trim(),
         bio: bio.trim() || null,
         location: location.trim() || null,
+        phone: phone.trim() || null,
+        // experience: experience.trim() || null, // TODO: Enable after adding experience column to DB
         interests: role === 'student' ? interests : [],
-      });
+      };
 
-      console.log('Profile upserted successfully');
+      console.log('=== ONBOARDING SAVE DEBUG ===');
+      console.log('Starting profile save with data:', profileData);
+
+      // Use the upsertProfile from useAuth hook to update profile and refresh state
+      await upsertProfile(profileData);
+
+      console.log('✅ Profile upserted successfully');
+      console.log('================================');
 
       // If student, also create preferences record
       if (role === 'student' && interests.length > 0) {
@@ -171,19 +179,38 @@ export default function OnboardingScreen() {
           value={bio}
           onChangeText={setBio}
           multiline
-          placeholder={role === 'student' 
+          placeholder={role === 'student'
             ? 'Tell us about your background, studies, and goals...'
             : 'Describe your company and what you do...'
           }
         />
-        
+
+        <Input
+          label={role === 'student' ? 'Experience & Education (Optional)' : 'Professional Experience (Optional)'}
+          value={experience}
+          onChangeText={setExperience}
+          multiline
+          placeholder={role === 'student'
+            ? 'Previous jobs, internships, volunteer work, schools attended, relevant coursework...'
+            : 'Previous roles, companies, achievements, education...'
+          }
+        />
+
         <Input
           label="Location"
           value={location}
           onChangeText={setLocation}
           placeholder="City, State"
         />
-        
+
+        <Input
+          label="Phone (Optional)"
+          value={phone}
+          onChangeText={setPhone}
+          placeholder="Your phone number"
+          keyboardType="phone-pad"
+        />
+
         {role === 'student' && (
           <View style={styles.interestsSection}>
             <Text style={styles.interestsTitle}>Select Your Interests</Text>
