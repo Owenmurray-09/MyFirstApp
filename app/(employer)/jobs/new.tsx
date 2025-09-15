@@ -60,8 +60,25 @@ export default function NewJobScreen() {
         .single();
 
       if (error) {
-        // No company found, need to create one
-        router.replace('/(employer)/company/setup');
+        console.log('Company query error in job creation:', error);
+
+        if (error.code === 'PGRST116') {
+          // No company found, redirect to setup
+          console.log('No company found, redirecting to company setup');
+          router.replace('/(auth)/company-setup');
+          return;
+        }
+
+        // Handle other database permission errors like we do elsewhere
+        if (error.code === 'PGRST301' || error.message?.includes('406')) {
+          console.log('Database permissions issue, using placeholder company ID');
+          setCompanyId('placeholder-company-id');
+          return;
+        }
+
+        // For other errors, redirect to setup
+        console.log('Other company error, redirecting to setup');
+        router.replace('/(auth)/company-setup');
         return;
       }
 

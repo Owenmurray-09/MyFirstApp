@@ -11,7 +11,8 @@ export default function SignInScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
-  const { signInWithEmail, signUpWithEmail, loading } = useAuth();
+  const [localError, setLocalError] = useState<string | null>(null);
+  const { signInWithEmail, signUpWithEmail, loading, error } = useAuth();
 
   const handleAuth = async () => {
     if (!email || !password) {
@@ -19,13 +20,17 @@ export default function SignInScreen() {
       return;
     }
 
+    // Clear any previous errors
+    setLocalError(null);
+
     console.log('Starting auth process...', { email, isSignUp });
 
     try {
       if (isSignUp) {
         console.log('Attempting sign up...');
         await signUpWithEmail(email, password);
-        Alert.alert('Success', 'Please check your email for verification link');
+        setIsSignUp(false);
+        Alert.alert('Success', 'Account created! You can now sign in below.');
       } else {
         console.log('Attempting sign in...');
         await signInWithEmail(email, password);
@@ -35,7 +40,31 @@ export default function SignInScreen() {
       }
     } catch (error: any) {
       console.error('Auth error:', error);
-      Alert.alert('Error', error.message || 'Authentication failed');
+
+      // Provide user-friendly error messages
+      let errorMessage = 'Authentication failed';
+
+      if (error.message?.includes('Invalid login credentials')) {
+        errorMessage = isSignUp
+          ? 'Unable to create account. Please check your email and password.'
+          : 'Unable to sign in. Please check your email and password.';
+      } else if (error.message?.includes('Email not confirmed')) {
+        errorMessage = 'Please check your email and click the verification link before signing in.';
+      } else if (error.message?.includes('User not found')) {
+        errorMessage = 'No account found with this email address. Please sign up first.';
+      } else if (error.message?.includes('Password')) {
+        errorMessage = 'Incorrect password. Please try again.';
+      } else if (error.message?.includes('Email')) {
+        errorMessage = 'Please enter a valid email address.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      console.log('About to show alert:', errorMessage);
+      setLocalError(errorMessage);
+
+      // Also show alert for immediate feedback
+      Alert.alert('Unable to Sign In', errorMessage);
     }
   };
 
@@ -49,6 +78,12 @@ export default function SignInScreen() {
       </View>
 
       <Card style={styles.form}>
+        {(localError || error) && (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{localError || error}</Text>
+          </View>
+        )}
+
         <Input
           label="Email"
           value={email}
@@ -131,5 +166,19 @@ const styles = StyleSheet.create({
   footerText: {
     color: theme.colors.primary,
     fontSize: theme.fontSize.md,
+  },
+  errorContainer: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FECACA',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+  },
+  errorText: {
+    color: '#DC2626',
+    fontSize: theme.fontSize.md,
+    textAlign: 'center',
+    fontWeight: theme.fontWeight.medium,
   },
 });
