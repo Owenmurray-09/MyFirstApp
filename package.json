@@ -1,21 +1,36 @@
 {
   "name": "myfirstapp",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "seed": "npx tsx scripts/seed.ts"
   },
   "dependencies": {
+    "@react-native-async-storage/async-storage": "2.1.2",
+    "@supabase/supabase-js": "^2.57.2",
+    "@types/react": "~19.0.10",
+    "@types/react-native": "^0.72.8",
     "expo": "~53.0.22",
+    "expo-router": "~5.1.5",
+    "expo-secure-store": "~14.2.4",
     "expo-status-bar": "~2.2.3",
     "react": "19.0.0",
-    "react-native": "0.79.6"
+    "react-dom": "19.0.0",
+    "react-native": "0.79.5",
+    "react-native-safe-area-context": "5.4.0",
+    "react-native-web": "^0.20.0",
+    "typescript": "~5.8.3",
+    "zod": "^4.1.5",
+    "expo-image-picker": "~16.1.4"
   },
   "devDependencies": {
-    "@babel/core": "^7.20.0"
+    "@babel/core": "^7.20.0",
+    "dotenv": "^16.4.5",
+    "tsx": "^4.7.1"
   },
   "private": true
 }
