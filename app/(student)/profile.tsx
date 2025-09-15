@@ -6,18 +6,35 @@ import { theme } from '@/config/theme';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { Tag } from '@/components/ui/Tag';
 import { useAuth } from '@/lib/hooks/useAuth';
+
+const STUDENT_INTERESTS = [
+  'cash register', 'customer service', 'heavy lifting', 'front desk',
+  'retail', 'barista', 'inventory', 'cleaning', 'basic coding', 'graphic design'
+];
 
 export default function ProfileScreen() {
   const { profile, signOut, updateProfile, loading } = useAuth();
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({
-    full_name: profile?.full_name || '',
+    name: profile?.name || '',
     bio: profile?.bio || '',
     location: profile?.location || '',
     phone: profile?.phone || '',
+    experience: profile?.experience || '',
+    interests: profile?.interests || [],
   });
+
+  const handleInterestToggle = (interest: string) => {
+    setEditForm(prev => ({
+      ...prev,
+      interests: prev.interests.includes(interest)
+        ? prev.interests.filter(i => i !== interest)
+        : [...prev.interests, interest]
+    }));
+  };
 
   const handleSave = async () => {
     try {
@@ -74,11 +91,11 @@ export default function ProfileScreen() {
             <View style={styles.profileHeader}>
               <View style={styles.avatarContainer}>
                 <Text style={styles.avatarText}>
-                  {profile.full_name?.charAt(0)?.toUpperCase() || 'U'}
+                  {profile.name?.charAt(0)?.toUpperCase() || 'U'}
                 </Text>
               </View>
               <View style={styles.profileInfo}>
-                <Text style={styles.profileName}>{profile.full_name || 'Unnamed User'}</Text>
+                <Text style={styles.profileName}>{profile.name || 'Unnamed User'}</Text>
                 <Text style={styles.profileRole}>Student</Text>
               </View>
             </View>
@@ -86,10 +103,10 @@ export default function ProfileScreen() {
             {isEditing ? (
               <View style={styles.editForm}>
                 <Input
-                  label="Full Name"
-                  value={editForm.full_name}
-                  onChangeText={(text) => setEditForm({ ...editForm, full_name: text })}
-                  placeholder="Enter your full name"
+                  label="Name"
+                  value={editForm.name}
+                  onChangeText={(text) => setEditForm({ ...editForm, name: text })}
+                  placeholder="Enter your name"
                 />
 
                 <Input
@@ -101,6 +118,14 @@ export default function ProfileScreen() {
                 />
 
                 <Input
+                  label="Experience & Education (Optional)"
+                  value={editForm.experience}
+                  onChangeText={(text) => setEditForm({ ...editForm, experience: text })}
+                  placeholder="Previous jobs, internships, volunteer work, schools attended, relevant coursework..."
+                  multiline
+                />
+
+                <Input
                   label="Location"
                   value={editForm.location}
                   onChangeText={(text) => setEditForm({ ...editForm, location: text })}
@@ -108,12 +133,30 @@ export default function ProfileScreen() {
                 />
 
                 <Input
-                  label="Phone"
+                  label="Phone (Optional)"
                   value={editForm.phone}
                   onChangeText={(text) => setEditForm({ ...editForm, phone: text })}
                   placeholder="Your phone number"
                   keyboardType="phone-pad"
                 />
+
+                <View style={styles.interestsSection}>
+                  <Text style={styles.interestsTitle}>Update Your Interests</Text>
+                  <Text style={styles.interestsSubtitle}>
+                    Choose skills and areas you're interested in working with
+                  </Text>
+
+                  <View style={styles.interestsTags}>
+                    {STUDENT_INTERESTS.map(interest => (
+                      <Tag
+                        key={interest}
+                        label={interest}
+                        selected={editForm.interests.includes(interest)}
+                        onPress={() => handleInterestToggle(interest)}
+                      />
+                    ))}
+                  </View>
+                </View>
 
                 <View style={styles.editActions}>
                   <Button
@@ -126,10 +169,12 @@ export default function ProfileScreen() {
                     onPress={() => {
                       setIsEditing(false);
                       setEditForm({
-                        full_name: profile?.full_name || '',
+                        name: profile?.name || '',
                         bio: profile?.bio || '',
                         location: profile?.location || '',
                         phone: profile?.phone || '',
+                        experience: profile?.experience || '',
+                        interests: profile?.interests || [],
                       });
                     }}
                     variant="outline"
@@ -145,6 +190,15 @@ export default function ProfileScreen() {
                   </Text>
                 </View>
 
+                {profile.experience && (
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailLabel}>Experience & Education</Text>
+                    <Text style={styles.detailValue}>
+                      {profile.experience}
+                    </Text>
+                  </View>
+                )}
+
                 <View style={styles.detailItem}>
                   <Text style={styles.detailLabel}>Location</Text>
                   <Text style={styles.detailValue}>
@@ -157,6 +211,19 @@ export default function ProfileScreen() {
                   <Text style={styles.detailValue}>
                     {profile.phone || 'Phone not provided'}
                   </Text>
+                </View>
+
+                <View style={styles.detailItem}>
+                  <Text style={styles.detailLabel}>Interests</Text>
+                  {profile.interests && profile.interests.length > 0 ? (
+                    <View style={styles.interestsTags}>
+                      {profile.interests.map((interest, index) => (
+                        <Tag key={index} label={interest} />
+                      ))}
+                    </View>
+                  ) : (
+                    <Text style={styles.detailValue}>No interests selected</Text>
+                  )}
                 </View>
 
                 <View style={styles.detailItem}>
@@ -299,5 +366,24 @@ const styles = StyleSheet.create({
   },
   signOutButton: {
     borderColor: theme.colors.danger,
+  },
+  interestsSection: {
+    marginTop: theme.spacing.lg,
+  },
+  interestsTitle: {
+    fontSize: theme.fontSize.lg,
+    fontWeight: theme.fontWeight.bold,
+    color: theme.colors.text,
+    marginBottom: theme.spacing.xs,
+  },
+  interestsSubtitle: {
+    fontSize: theme.fontSize.md,
+    color: theme.colors.textSecondary,
+    marginBottom: theme.spacing.md,
+  },
+  interestsTags: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: theme.spacing.xs,
   },
 });

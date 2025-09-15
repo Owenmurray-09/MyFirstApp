@@ -10,6 +10,8 @@ create table if not exists public.profiles (
   bio text,
   interests text[] default '{}',
   location text,
+  phone text,
+  experience text,
   avatar_url text,
   daily_digest_enabled boolean default false,
   created_at timestamptz default now()
