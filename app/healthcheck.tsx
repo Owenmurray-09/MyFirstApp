@@ -1,23 +1,57 @@
-// TEMP_TRACER: remove later - smoke test screen for web build verification
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Link } from 'expo-router';
+import { supabase } from '@/lib/supabase';
 
 export default function HealthCheckScreen() {
+  const [testResult, setTestResult] = useState<string>('');
+
+  const testSupabaseConnection = async () => {
+    setTestResult('Testing...');
+
+    try {
+      // Test basic connection
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('count')
+        .limit(1);
+
+      if (error) {
+        console.error('Supabase test error:', error);
+        setTestResult(`❌ Error: ${error.message}`);
+      } else {
+        console.log('Supabase test success:', data);
+        setTestResult('✅ Supabase connection working!');
+      }
+    } catch (err) {
+      console.error('Connection test failed:', err);
+      setTestResult(`❌ Connection failed: ${err}`);
+    }
+  };
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Hello World – tracer bullet</Text>
+      <Text style={styles.title}>App Health Check</Text>
       <Text style={styles.subtitle}>✅ Expo web build is working!</Text>
-      
+
+      <TouchableOpacity style={styles.button} onPress={testSupabaseConnection}>
+        <Text style={styles.buttonText}>Test Supabase Connection</Text>
+      </TouchableOpacity>
+
+      {testResult ? (
+        <Text style={styles.testResult}>{testResult}</Text>
+      ) : null}
+
       <Link href="/" asChild>
         <TouchableOpacity style={styles.button}>
           <Text style={styles.buttonText}>← Back to Home</Text>
         </TouchableOpacity>
       </Link>
-      
+
       <Text style={styles.info}>
         Route: /healthcheck{'\n'}
         Build: {new Date().toISOString()}
+        {'\n'}URL: {process.env.EXPO_PUBLIC_SUPABASE_URL}
       </Text>
     </View>
   );
@@ -59,5 +93,14 @@ const styles = StyleSheet.create({
     color: '#999',
     textAlign: 'center',
     lineHeight: 16,
+  },
+  testResult: {
+    fontSize: 16,
+    color: '#333',
+    marginVertical: 20,
+    textAlign: 'center',
+    padding: 10,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
   },
 });

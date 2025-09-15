@@ -1,18 +1,17 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
 import { router } from 'expo-router';
-import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/lib/hooks/useAuth';
 import { theme } from '@/config/theme';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 
 export default function SignInScreen() {
-  // TODO: Add magic link email sign-in as alternative to password flow
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const { signInWithEmail, signUpWithEmail, loading } = useAuth();
 
   const handleAuth = async () => {
     if (!email || !password) {
@@ -20,43 +19,23 @@ export default function SignInScreen() {
       return;
     }
 
-    setLoading(true);
+    console.log('Starting auth process...', { email, isSignUp });
+
     try {
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-        });
-        
-        if (error) throw error;
-        
+        console.log('Attempting sign up...');
+        await signUpWithEmail(email, password);
         Alert.alert('Success', 'Please check your email for verification link');
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        
-        if (error) throw error;
-        
-        // Check if user has completed onboarding
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .single();
-        
-        if (!profile?.role) {
-          router.replace('/(auth)/onboarding');
-        } else if (profile.role === 'student') {
-          router.replace('/(student)');
-        } else {
-          router.replace('/(employer)');
-        }
+        console.log('Attempting sign in...');
+        await signInWithEmail(email, password);
+        console.log('Sign in completed successfully');
+        // Navigate to index which will handle routing based on profile
+        router.replace('/');
       }
     } catch (error: any) {
-      Alert.alert('Error', error.message);
-    } finally {
-      setLoading(false);
+      console.error('Auth error:', error);
+      Alert.alert('Error', error.message || 'Authentication failed');
     }
   };
 

@@ -96,6 +96,55 @@ export function useApplications(
   };
 }
 
+interface UseCheckApplicationReturn {
+  hasApplied: boolean;
+  loading: boolean;
+  error: string | null;
+}
+
+export function useCheckApplication(jobId: string): UseCheckApplicationReturn {
+  const [hasApplied, setHasApplied] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const checkApplication = async () => {
+      if (!jobId) return;
+
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setHasApplied(false);
+          setLoading(false);
+          return;
+        }
+
+        const { data, error } = await supabase
+          .from('applications')
+          .select('id')
+          .eq('job_id', jobId)
+          .eq('student_user_id', user.id)
+          .limit(1);
+
+        if (error) throw error;
+        setHasApplied(data.length > 0);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to check application status');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkApplication();
+  }, [jobId]);
+
+  return {
+    hasApplied,
+    loading,
+    error,
+  };
+}
+
 export function useApply(): UseApplyReturn {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -107,6 +156,18 @@ export function useApply(): UseApplyReturn {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No authenticated user');
+
+      // Check if already applied
+      const { data: existingApplication } = await supabase
+        .from('applications')
+        .select('id')
+        .eq('job_id', jobId)
+        .eq('student_user_id', user.id)
+        .limit(1);
+
+      if (existingApplication && existingApplication.length > 0) {
+        throw new Error('You have already applied for this position');
+      }
 
       const applicationData: ApplicationInsert = {
         job_id: jobId,

@@ -5,32 +5,80 @@ import { useAuth } from '@/lib/hooks/useAuth';
 
 export default function IndexScreen() {
   const router = useRouter();
-  const { session, profile, loading } = useAuth();
+  const { session, profile, loading, error } = useAuth();
 
   useEffect(() => {
-    if (loading) return;
+    console.log('Index screen useEffect:', {
+      loading,
+      session: !!session,
+      profile: profile?.role,
+      profileExists: !!profile,
+      sessionUserId: session?.user?.id,
+      profileName: profile?.name,
+      fullProfile: profile
+    });
+
+    // Wait for loading to complete AND for profile data when there's a session
+    if (loading || (!profile && session)) {
+      console.log('Index: Still loading or waiting for profile data...');
+      return;
+    }
 
     if (!session) {
+      console.log('Index: No session - redirecting to sign-in');
       router.replace('/(auth)/sign-in');
       return;
     }
 
     if (!profile?.role) {
-      router.replace('/(auth)/onboarding');
+      console.log('Index: No profile role - redirecting to onboarding', {
+        profile,
+        hasProfile: !!profile,
+        role: profile?.role,
+        currentPath: window?.location?.pathname
+      });
+
+      // Only redirect if we're not already on onboarding
+      if (window?.location?.pathname !== '/onboarding') {
+        console.log('Index: Redirecting to onboarding...');
+        router.replace('/(auth)/onboarding');
+      } else {
+        console.log('Index: Already on onboarding, skipping redirect');
+      }
       return;
     }
 
+    console.log('Index: Profile found with role - redirecting to dashboard:', profile.role);
     if (profile.role === 'student') {
+      console.log('Index: Redirecting to student dashboard');
       router.replace('/(student)/');
     } else if (profile.role === 'employer') {
+      console.log('Index: Redirecting to employer dashboard');
       router.replace('/(employer)/');
     }
   }, [session, profile, loading, router]);
 
-  if (loading) {
+  // Show loading while waiting for authentication or profile data
+  if (loading || (!profile && session)) {
     return (
       <View style={styles.container}>
         <Text style={styles.loading}>Loading...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorTitle}>Database Setup Required</Text>
+        <Text style={styles.error}>
+          {error.includes('Database not set up')
+            ? 'Please set up your database by running the schema.sql file in your Supabase SQL Editor.'
+            : error}
+        </Text>
+        <Text style={styles.errorInstructions}>
+          Go to: https://supabase.com/dashboard/project/iydmakvgonzlyxgpwwzt/sql
+        </Text>
       </View>
     );
   }
@@ -58,5 +106,25 @@ const styles = StyleSheet.create({
   loading: {
     fontSize: 16,
     color: '#666',
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#EF4444',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  error: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 16,
+    lineHeight: 22,
+  },
+  errorInstructions: {
+    fontSize: 14,
+    color: '#3B82F6',
+    textAlign: 'center',
+    textDecorationLine: 'underline',
   },
 });
