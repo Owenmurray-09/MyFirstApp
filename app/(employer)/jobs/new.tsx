@@ -155,14 +155,24 @@ export default function NewJobScreen() {
   };
 
   const handleSubmit = async () => {
+    console.log('=== JOB POSTING SUBMIT DEBUG ===');
+    console.log('handleSubmit called');
+    console.log('Company ID:', companyId);
+
     if (!companyId) {
+      console.log('❌ No company ID found');
       Alert.alert('Error', 'Company not found. Please set up your company first.');
       return;
     }
 
+    console.log('✅ Company ID exists, validating form...');
     if (!validateForm()) {
+      console.log('❌ Form validation failed');
+      console.log('Validation errors:', errors);
       return;
     }
+
+    console.log('✅ Form validation passed');
 
     try {
       const jobData = {
@@ -175,25 +185,46 @@ export default function NewJobScreen() {
         stipend_amount: isPaid && stipendAmount ? parseFloat(stipendAmount) : null,
       };
 
-      const job = await createJob(jobData);
+      console.log('📝 Job data to submit:', jobData);
+      console.log('🚀 Calling createJob...');
+
+      let job;
+      try {
+        job = await createJob(jobData);
+        console.log('✅ Job created successfully:', job);
+      } catch (createError: any) {
+        console.log('❌ Job creation failed:', createError);
+        if (typeof window !== 'undefined') {
+          window.alert(`Error: ${createError.message || 'Failed to create job'}`);
+        } else {
+          Alert.alert('Error', createError.message || 'Failed to create job');
+        }
+        return;
+      }
 
       // Upload images if any selected
       if (selectedImages.length > 0) {
-        const imageFiles = await Promise.all(
-          selectedImages.map(async (asset) => {
-            const response = await fetch(asset.uri);
-            const blob = await response.blob();
-            return new File([blob], asset.fileName || 'image.jpg', { type: 'image/jpeg' });
-          })
-        );
+        console.log('📸 Uploading images...');
+        try {
+          const imageFiles = await Promise.all(
+            selectedImages.map(async (asset) => {
+              const response = await fetch(asset.uri);
+              const blob = await response.blob();
+              return new File([blob], asset.fileName || 'image.jpg', { type: 'image/jpeg' });
+            })
+          );
 
-        await uploadImages(job.id, imageFiles);
+          await uploadImages(job.id, imageFiles);
+          console.log('✅ Images uploaded successfully');
+        } catch (imageError) {
+          console.warn('⚠️ Image upload failed, but job was created:', imageError);
+        }
       }
 
       // Show success message with notification details
       const notificationResult = (job as any).notificationResult;
       let successMessage = 'Job posted successfully!';
-      
+
       if (notificationResult?.success && notificationResult?.matchedStudents !== undefined) {
         const matchedCount = notificationResult.matchedStudents;
         if (matchedCount > 0) {
@@ -206,12 +237,38 @@ export default function NewJobScreen() {
         successMessage += '\n\n📢 Your job is now live and visible to students!';
       }
 
-      Alert.alert('Success', successMessage, [
-        { text: 'OK', onPress: () => router.back() }
-      ]);
+      console.log('🎉 Success! Showing alert to user');
+      console.log('📱 About to show alert...');
+
+      // Use native browser alert for web compatibility, then navigate
+      setTimeout(() => {
+        if (typeof window !== 'undefined') {
+          // Web environment - use native alert
+          window.alert(successMessage);
+          console.log('👤 Alert shown, navigating back...');
+          router.back();
+        } else {
+          // React Native environment - use Alert.alert
+          Alert.alert('Success', successMessage, [
+            { text: 'OK', onPress: () => {
+              console.log('👤 User clicked OK, navigating back...');
+              router.back();
+            }}
+          ]);
+        }
+      }, 100);
+
     } catch (error: any) {
-      Alert.alert('Error', error.message);
+      console.log('❌ UNEXPECTED ERROR in handleSubmit:', error);
+      console.log('Error message:', error.message);
+      console.log('Error stack:', error.stack);
+      if (typeof window !== 'undefined') {
+        window.alert(`Error: ${error.message || 'An unexpected error occurred'}`);
+      } else {
+        Alert.alert('Error', error.message || 'An unexpected error occurred');
+      }
     }
+    console.log('=== JOB POSTING SUBMIT END ===');
   };
 
   if (loadingCompany) {
@@ -337,12 +394,19 @@ export default function NewJobScreen() {
               ))}
             </View>
             {errors.tags && <Text style={styles.errorText}>{errors.tags}</Text>}
+            {selectedTags.length === 0 && (
+              <Text style={styles.helperText}>Please select at least one skill tag</Text>
+            )}
           </View>
           
           <View style={styles.actions}>
             <Button
               title={uploadLoading ? `Uploading Images... ${Math.round(progress)}%` : "Post Job"}
-              onPress={handleSubmit}
+              onPress={() => {
+                console.log('📋 Post Job button clicked');
+                console.log('Button state - createLoading:', createLoading, 'uploadLoading:', uploadLoading);
+                handleSubmit();
+              }}
               loading={createLoading || uploadLoading}
               disabled={createLoading || uploadLoading}
             />
@@ -474,5 +538,11 @@ const styles = StyleSheet.create({
   },
   addImageButton: {
     marginTop: theme.spacing.md,
+  },
+  helperText: {
+    fontSize: theme.fontSize.sm,
+    color: theme.colors.textSecondary,
+    marginTop: theme.spacing.xs,
+    fontStyle: 'italic',
   },
 });
