@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, FlatList, RefreshControl, Text } from 'react-native';
+import { View, StyleSheet, FlatList, RefreshControl, Text, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { theme } from '@/config/theme';
 import { JobCard } from '@/components/ui/JobCard';
 import { Button } from '@/components/ui/Button';
+import { useAuth } from '@/lib/hooks/useAuth';
 
 interface Job {
   id: string;
@@ -24,6 +25,7 @@ interface Job {
 }
 
 export default function EmployerHomeScreen() {
+  const { signOut } = useAuth();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -106,6 +108,15 @@ export default function EmployerHomeScreen() {
     router.push('/(employer)/jobs/new');
   };
 
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      console.log('Logged out successfully');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
   const renderJob = ({ item }: { item: Job }) => (
     <JobCard
       id={item.id}
@@ -145,8 +156,15 @@ export default function EmployerHomeScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>My Jobs</Text>
-        <Text style={styles.subtitle}>{jobs.length} jobs posted</Text>
+        <View style={styles.headerTop}>
+          <View>
+            <Text style={styles.title}>My Jobs</Text>
+            <Text style={styles.subtitle}>{jobs.length} jobs posted</Text>
+          </View>
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Text style={styles.logoutText}>Logout</Text>
+          </TouchableOpacity>
+        </View>
         <Button
           title="+ Post New Job"
           onPress={handleNewJob}
@@ -177,6 +195,12 @@ const styles = StyleSheet.create({
   header: {
     padding: theme.spacing.lg,
   },
+  headerTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: theme.spacing.md,
+  },
   title: {
     fontSize: theme.fontSize.xxxl,
     fontWeight: theme.fontWeight.bold,
@@ -186,7 +210,17 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: theme.fontSize.md,
     color: theme.colors.textSecondary,
-    marginBottom: theme.spacing.md,
+  },
+  logoutButton: {
+    backgroundColor: theme.colors.error || '#EF4444',
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    borderRadius: 8,
+  },
+  logoutText: {
+    color: 'white',
+    fontSize: theme.fontSize.sm,
+    fontWeight: theme.fontWeight.medium,
   },
   newJobButton: {
     alignSelf: 'flex-start',
