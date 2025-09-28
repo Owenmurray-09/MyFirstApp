@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, Text, Image, Alert, Dimensions, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ScrollView, Text, Image, Alert, Dimensions, TouchableOpacity, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { theme } from '@/config/theme';
@@ -10,7 +10,6 @@ import { Input } from '@/components/ui/Input';
 import { useJob } from '@/lib/hooks/useJobs';
 import { useApply, useCheckApplication } from '@/lib/hooks/useApplications';
 import { useComments, useAddComment } from '@/lib/hooks/useComments';
-import { useCreateThread } from '@/lib/hooks/useMessages';
 import { useAuth } from '@/lib/hooks/useAuth';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -105,13 +104,14 @@ export default function JobDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const [applicationNote, setApplicationNote] = useState('');
+  const [applicationEmail, setApplicationEmail] = useState('');
+  const [applicationPhone, setApplicationPhone] = useState('');
   const [showApplicationForm, setShowApplicationForm] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const { job, loading } = useJob(id as string);
   const { apply, loading: applying } = useApply();
   const { hasApplied, loading: checkingApplication } = useCheckApplication(id as string);
-  const { createThread, loading: creatingThread } = useCreateThread();
   const { profile } = useAuth();
 
   const renderImageCarousel = () => {
@@ -165,13 +165,33 @@ export default function JobDetailScreen() {
       return;
     }
 
+    // Validate required fields (make email required, phone optional)
+    if (!applicationEmail.trim()) {
+      Alert.alert('Email Required', 'Please provide your email address so the employer can contact you.');
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(applicationEmail.trim())) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address.');
+      return;
+    }
+
     if (!id) return;
 
     try {
-      await apply(id, applicationNote.trim() || undefined);
+      await apply(
+        id,
+        applicationNote.trim() || undefined,
+        applicationEmail.trim(),
+        applicationPhone.trim()
+      );
       Alert.alert('Success', 'Your application has been submitted!');
       setShowApplicationForm(false);
       setApplicationNote('');
+      setApplicationEmail('');
+      setApplicationPhone('');
     } catch (error: any) {
       Alert.alert('Error', error.message);
     }
@@ -239,6 +259,23 @@ export default function JobDetailScreen() {
             {showApplicationForm ? (
               <View style={styles.applicationForm}>
                 <Input
+                  label="Email Address"
+                  value={applicationEmail}
+                  onChangeText={setApplicationEmail}
+                  placeholder="your.email@example.com"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+
+                <Input
+                  label="Phone Number (Optional)"
+                  value={applicationPhone}
+                  onChangeText={setApplicationPhone}
+                  placeholder="+1 (555) 123-4567"
+                  keyboardType="phone-pad"
+                />
+
+                <Input
                   label="Cover Note (Optional)"
                   value={applicationNote}
                   onChangeText={setApplicationNote}
@@ -276,32 +313,37 @@ export default function JobDetailScreen() {
             <Text style={styles.sectionTitle}>Contact Employer</Text>
             <Text style={styles.contactDescription}>
               Have questions about this {job.is_paid ? 'position' : 'internship'}?
-              Start a conversation with the employer.
+              Contact the employer directly.
             </Text>
-            <Button
-              title="Send Message"
-              onPress={async () => {
-                if (!job?.companies?.owner_user_id || !profile?.id) {
-                  Alert.alert('Error', 'Unable to start conversation');
-                  return;
-                }
 
-                try {
-                  const thread = await createThread(
-                    job.id,
-                    job.companies.owner_user_id,
-                    profile.id
-                  );
+            <View style={styles.contactButtonsContainer}>
+              <Button
+                title="📧 Email"
+                onPress={() => {
+                  const email = job?.companies?.email || 'contact@company.com';
+                  const subject = `Question about ${job?.title}`;
+                  const body = `Hi,\n\nI'm interested in the ${job?.title} position and have some questions.\n\nBest regards`;
+                  Linking.openURL(`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+                }}
+                variant="outline"
+                style={styles.contactButton}
+              />
 
-                  router.push(`/(student)/messages/${thread.id}`);
-                } catch (error: any) {
-                  Alert.alert('Error', error.message);
-                }
-              }}
-              variant="outline"
-              style={styles.contactButton}
-              loading={creatingThread}
-            />
+              <Button
+                title="💬 WhatsApp"
+                onPress={() => {
+                  const phone = job?.companies?.phone || '';
+                  if (!phone) {
+                    Alert.alert('No WhatsApp', 'WhatsApp contact not available for this employer.');
+                    return;
+                  }
+                  const message = `Hi! I'm interested in the ${job?.title} position.`;
+                  Linking.openURL(`whatsapp://send?phone=${phone}&text=${encodeURIComponent(message)}`);
+                }}
+                variant="outline"
+                style={styles.contactButton}
+              />
+            </View>
           </Card>
           
           <CommentSection jobId={id as string} />
@@ -481,7 +523,13 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginBottom: theme.spacing.md,
   },
+  contactButtonsContainer: {
+    flexDirection: 'row',
+    gap: theme.spacing.md,
+    justifyContent: 'space-between',
+  },
   contactButton: {
+    flex: 1,
     marginTop: theme.spacing.sm,
   },
   sectionSubtitle: {

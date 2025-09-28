@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet, Switch } from 'react-native';
 import { theme } from '@/config/theme';
 import { Input } from './Input';
@@ -8,38 +8,38 @@ import { Button } from './Button';
 interface JobFiltersProps {
   onFiltersChange: (filters: {
     keyword: string;
-    isPaidOnly: boolean;
+    paidOnly: boolean;
     location: string;
-    selectedTags: string[];
+    tags: string[];
   }) => void;
   availableTags: string[];
 }
 
 export const JobFilters: React.FC<JobFiltersProps> = ({ onFiltersChange, availableTags }) => {
   const [keyword, setKeyword] = useState('');
-  const [isPaidOnly, setIsPaidOnly] = useState(false);
+  const [paidOnly, setPaidOnly] = useState(false);
   const [location, setLocation] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isExpanded, setIsExpanded] = useState(false);
 
+  // Real-time filter updates
+  useEffect(() => {
+    onFiltersChange({ keyword, paidOnly, location, tags: selectedTags });
+  }, [keyword, paidOnly, location, selectedTags, onFiltersChange]);
+
   const handleTagToggle = (tag: string) => {
-    setSelectedTags(prev => 
-      prev.includes(tag) 
+    setSelectedTags(prev =>
+      prev.includes(tag)
         ? prev.filter(t => t !== tag)
         : [...prev, tag]
     );
   };
 
-  const applyFilters = () => {
-    onFiltersChange({ keyword, isPaidOnly, location, selectedTags });
-  };
-
   const clearFilters = () => {
     setKeyword('');
-    setIsPaidOnly(false);
+    setPaidOnly(false);
     setLocation('');
     setSelectedTags([]);
-    onFiltersChange({ keyword: '', isPaidOnly: false, location: '', selectedTags: [] });
   };
 
   return (
@@ -54,10 +54,10 @@ export const JobFilters: React.FC<JobFiltersProps> = ({ onFiltersChange, availab
       <View style={styles.quickFilters}>
         <View style={styles.paidFilter}>
           <Text style={styles.filterLabel}>Paid jobs only</Text>
-          <Switch value={isPaidOnly} onValueChange={setIsPaidOnly} />
+          <Switch value={paidOnly} onValueChange={setPaidOnly} />
         </View>
-        
-        <Button 
+
+        <Button
           title={isExpanded ? 'Less Filters' : 'More Filters'}
           onPress={() => setIsExpanded(!isExpanded)}
           variant="outline"
@@ -73,7 +73,7 @@ export const JobFilters: React.FC<JobFiltersProps> = ({ onFiltersChange, availab
             value={location}
             onChangeText={setLocation}
           />
-          
+
           <Text style={styles.filterLabel}>Skills & Interests</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tagsScroll}>
             <View style={styles.tagsContainer}>
@@ -87,9 +87,8 @@ export const JobFilters: React.FC<JobFiltersProps> = ({ onFiltersChange, availab
               ))}
             </View>
           </ScrollView>
-          
+
           <View style={styles.filterActions}>
-            <Button title="Apply Filters" onPress={applyFilters} size="sm" />
             <Button title="Clear All" onPress={clearFilters} variant="outline" size="sm" />
           </View>
         </View>
