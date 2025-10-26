@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
   },
   logoutButton: {
-    backgroundColor: theme.colors.error || '#EF4444',
+    backgroundColor: theme.colors.accent,
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.sm,
     borderRadius: 8,

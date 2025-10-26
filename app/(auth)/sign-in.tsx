@@ -102,7 +102,7 @@ export default function SignInScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.header}>
-        <Text style={styles.title}>Welcome to JobConnect</Text>
+        <Text style={styles.title}>Welcome to Bridge</Text>
         <Text style={styles.subtitle}>
           {isSignUp ? 'Create your account' : 'Sign in to continue'}
         </Text>
@@ -172,12 +172,13 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: theme.fontSize.xxxl,
-    fontWeight: theme.fontWeight.bold,
+    fontFamily: theme.fontFamily.title,
     color: theme.colors.text,
     marginBottom: theme.spacing.sm,
   },
   subtitle: {
     fontSize: theme.fontSize.lg,
+    fontFamily: theme.fontFamily.body,
     color: theme.colors.textSecondary,
     textAlign: 'center',
   },
@@ -195,8 +196,9 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.xl,
   },
   footerText: {
-    color: theme.colors.primary,
+    color: theme.colors.accent,
     fontSize: theme.fontSize.md,
+    fontFamily: theme.fontFamily.body,
   },
   errorContainer: {
     backgroundColor: '#FEF2F2',
@@ -209,7 +211,7 @@ const styles = StyleSheet.create({
   errorText: {
     color: '#DC2626',
     fontSize: theme.fontSize.md,
+    fontFamily: theme.fontFamily.bodyMedium,
     textAlign: 'center',
-    fontWeight: theme.fontWeight.medium,
   },
 });

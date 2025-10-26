@@ -49,6 +49,7 @@ export const JobFilters: React.FC<JobFiltersProps> = ({ onFiltersChange, availab
         value={keyword}
         onChangeText={setKeyword}
         style={styles.searchInput}
+        placeholderTextColor={theme.colors.textSecondary}
       />
       
       <View style={styles.quickFilters}>
@@ -106,6 +107,9 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     marginBottom: 0,
+    borderColor: theme.colors.text,
+    borderWidth: 2,
+    color: theme.colors.text,
   },
   quickFilters: {
     flexDirection: 'row',
@@ -120,7 +124,7 @@ const styles = StyleSheet.create({
   },
   filterLabel: {
     fontSize: theme.fontSize.md,
-    fontWeight: theme.fontWeight.medium,
+    fontFamily: theme.fontFamily.bodyMedium,
     color: theme.colors.text,
   },
   expandedFilters: {

@@ -6,7 +6,7 @@ interface TagProps {
   label: string;
   selected?: boolean;
   onPress?: () => void;
-  variant?: 'default' | 'success' | 'warning';
+  variant?: 'default' | 'success' | 'warning' | 'primary';
   style?: ViewStyle;
 }
 
@@ -63,6 +63,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFBEB',
     borderColor: theme.colors.warning,
   },
+  primary: {
+    backgroundColor: theme.colors.primaryLight,
+    borderColor: theme.colors.primaryLight,
+  },
   selected: {
     backgroundColor: theme.colors.primary,
     borderColor: theme.colors.primary,
@@ -76,9 +80,12 @@ const styles = StyleSheet.create({
   warningSelected: {
     backgroundColor: theme.colors.warning,
   },
+  primarySelected: {
+    backgroundColor: theme.colors.primaryDark,
+  },
   text: {
     fontSize: theme.fontSize.sm,
-    fontWeight: theme.fontWeight.medium,
+    fontFamily: theme.fontFamily.bodyMedium,
   },
   defaultText: {
     color: theme.colors.text,
@@ -89,16 +96,22 @@ const styles = StyleSheet.create({
   warningText: {
     color: theme.colors.warning,
   },
+  primaryText: {
+    color: theme.colors.textOnPrimary,
+  },
   selectedText: {
-    color: theme.colors.background,
+    color: theme.colors.textOnPrimary,
   },
   defaultSelectedText: {
-    color: theme.colors.background,
+    color: theme.colors.textOnPrimary,
   },
   successSelectedText: {
-    color: theme.colors.background,
+    color: theme.colors.textOnPrimary,
   },
   warningSelectedText: {
-    color: theme.colors.background,
+    color: theme.colors.textOnPrimary,
+  },
+  primarySelectedText: {
+    color: theme.colors.textOnPrimary,
   },
 });

@@ -121,13 +121,18 @@ export default function StudentHomeScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerTop}>
-          <View>
+          <View style={styles.leftSection}>
             <Text style={styles.title}>Find Jobs</Text>
             <Text style={styles.subtitle}>{jobs.length} opportunities available</Text>
           </View>
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Text style={styles.logoutText}>Logout</Text>
-          </TouchableOpacity>
+          <View style={styles.centerSection}>
+            <Text style={styles.bridgeTitle}>BRIDGE</Text>
+          </View>
+          <View style={styles.rightSection}>
+            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+              <Text style={styles.logoutText}>Logout</Text>
+            </TouchableOpacity>
+          </View>
         </View>
         {profile && (
           <Text style={styles.welcomeText}>Welcome back, {profile.name}!</Text>
@@ -169,23 +174,43 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: theme.spacing.sm,
   },
-  title: {
+  leftSection: {
+    flex: 1,
+    alignItems: 'flex-start',
+  },
+  centerSection: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rightSection: {
+    flex: 1,
+    alignItems: 'flex-end',
+  },
+  bridgeTitle: {
     fontSize: theme.fontSize.xxxl,
-    fontWeight: theme.fontWeight.bold,
+    fontFamily: theme.fontFamily.title,
+    color: theme.colors.text,
+    letterSpacing: 2,
+  },
+  title: {
+    fontSize: theme.fontSize.xl,
+    fontFamily: theme.fontFamily.titleMedium,
     color: theme.colors.text,
     marginBottom: theme.spacing.xs,
   },
   subtitle: {
     fontSize: theme.fontSize.md,
-    color: theme.colors.textSecondary,
+    fontFamily: theme.fontFamily.body,
+    color: theme.colors.secondary,
   },
   welcomeText: {
     fontSize: theme.fontSize.lg,
-    color: theme.colors.primary,
-    fontWeight: theme.fontWeight.medium,
+    fontFamily: theme.fontFamily.bodyMedium,
+    color: theme.colors.text,
   },
   logoutButton: {
-    backgroundColor: theme.colors.error || '#EF4444',
+    backgroundColor: theme.colors.accent,
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.sm,
     borderRadius: 8,
@@ -193,7 +218,7 @@ const styles = StyleSheet.create({
   logoutText: {
     color: 'white',
     fontSize: theme.fontSize.sm,
-    fontWeight: theme.fontWeight.medium,
+    fontFamily: theme.fontFamily.bodyMedium,
   },
   loading: {
     flex: 1,
@@ -202,6 +227,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: theme.fontSize.lg,
+    fontFamily: theme.fontFamily.body,
     color: theme.colors.textSecondary,
   },
   list: {
@@ -217,12 +243,13 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: theme.fontSize.xl,
-    fontWeight: theme.fontWeight.bold,
+    fontFamily: theme.fontFamily.titleMedium,
     color: theme.colors.text,
     marginBottom: theme.spacing.sm,
   },
   emptyText: {
     fontSize: theme.fontSize.md,
+    fontFamily: theme.fontFamily.body,
     color: theme.colors.textSecondary,
     textAlign: 'center',
   },

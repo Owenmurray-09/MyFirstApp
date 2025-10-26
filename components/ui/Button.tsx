@@ -46,7 +46,7 @@ export const Button: React.FC<ButtonProps> = ({
       activeOpacity={0.8}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'outline' ? theme.colors.primary : theme.colors.background} />
+        <ActivityIndicator color={variant === 'outline' ? theme.colors.primary : theme.colors.textOnPrimary} />
       ) : (
         <Text style={textStyleCombined}>{title}</Text>
       )}
@@ -88,13 +88,13 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   text: {
-    fontWeight: theme.fontWeight.medium,
+    fontFamily: theme.fontFamily.bodyMedium,
   },
   primaryText: {
-    color: theme.colors.background,
+    color: theme.colors.textOnPrimary,
   },
   secondaryText: {
-    color: theme.colors.background,
+    color: theme.colors.textOnPrimary,
   },
   outlineText: {
     color: theme.colors.primary,

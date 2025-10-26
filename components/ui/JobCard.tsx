@@ -48,9 +48,9 @@ export const JobCard: React.FC<JobCardProps> = ({
           )}
           
           <View style={styles.paymentInfo}>
-            <Tag 
-              label={isPaid ? (stipendAmount ? formatStipend(stipendAmount) || 'Paid' : 'Paid') : 'Unpaid'} 
-              variant={isPaid ? 'success' : 'warning'}
+            <Tag
+              label={isPaid ? (stipendAmount ? formatStipend(stipendAmount) || 'Paid' : 'Paid') : 'Unpaid'}
+              variant="primary"
             />
           </View>
           
@@ -85,17 +85,19 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: theme.fontSize.lg,
-    fontWeight: theme.fontWeight.bold,
-    color: theme.colors.text,
+    fontFamily: theme.fontFamily.titleMedium,
+    color: theme.colors.accent,
     marginBottom: theme.spacing.xs,
   },
   company: {
     fontSize: theme.fontSize.md,
+    fontFamily: theme.fontFamily.body,
     color: theme.colors.textSecondary,
     marginBottom: theme.spacing.sm,
   },
   location: {
     fontSize: theme.fontSize.sm,
+    fontFamily: theme.fontFamily.body,
     color: theme.colors.textSecondary,
     marginBottom: theme.spacing.md,
   },
