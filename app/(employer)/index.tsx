@@ -121,6 +121,8 @@ export default function EmployerHomeScreen() {
     try {
       await signOut();
       console.log('Logged out successfully');
+      // Navigate to sign-in page after successful logout
+      router.replace('/(auth)/sign-in');
     } catch (error) {
       console.error('Logout error:', error);
     }
