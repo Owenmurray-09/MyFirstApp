@@ -165,18 +165,19 @@ export default function JobDetailScreen() {
       return;
     }
 
+    // VALIDATION DISABLED
     // Validate required fields (make email required, phone optional)
-    if (!applicationEmail.trim()) {
-      Alert.alert('Email Required', 'Please provide your email address so the employer can contact you.');
-      return;
-    }
+    // if (!applicationEmail.trim()) {
+    //   Alert.alert('Email Required', 'Please provide your email address so the employer can contact you.');
+    //   return;
+    // }
 
     // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(applicationEmail.trim())) {
-      Alert.alert('Invalid Email', 'Please enter a valid email address.');
-      return;
-    }
+    // const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    // if (!emailRegex.test(applicationEmail.trim())) {
+    //   Alert.alert('Invalid Email', 'Please enter a valid email address.');
+    //   return;
+    // }
 
     if (!id) return;
 
