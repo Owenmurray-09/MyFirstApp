@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl, Text, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '@/lib/supabase';
 import { theme } from '@/config/theme';
 import { JobCard } from '@/components/ui/JobCard';
@@ -33,6 +34,14 @@ export default function EmployerHomeScreen() {
   useEffect(() => {
     loadJobs();
   }, []);
+
+  // Refresh jobs when screen comes into focus (e.g., returning from job posting)
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('Employer dashboard focused - refreshing jobs');
+      loadJobs();
+    }, [])
+  );
 
   const loadJobs = async () => {
     try {
