@@ -39,6 +39,20 @@ export default function ProfileScreen() {
     loadProfile();
   }, []);
 
+  // Update editForm whenever profile changes
+  useEffect(() => {
+    if (profile) {
+      const formData = {
+        name: profile.name || '',
+        bio: profile.bio || '',
+        location: profile.location || '',
+        phone: profile.phone || '',
+        experience: profile.experience || '',
+      };
+      setEditForm(formData);
+    }
+  }, [profile]);
+
   const loadProfile = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -51,20 +65,34 @@ export default function ProfileScreen() {
         .single();
 
       if (error) throw error;
-      
+
       setProfile(data);
-      setEditForm({
+
+      // Update edit form with loaded data
+      const formData = {
         name: data.name || '',
         bio: data.bio || '',
         location: data.location || '',
         phone: data.phone || '',
         experience: data.experience || '',
-      });
+      };
+      setEditForm(formData);
     } catch (error) {
       console.error('Error loading profile:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const resetEditForm = () => {
+    const formData = {
+      name: profile?.name || '',
+      bio: profile?.bio || '',
+      location: profile?.location || '',
+      phone: profile?.phone || '',
+      experience: profile?.experience || '',
+    };
+    setEditForm(formData);
   };
 
   const handleSave = async () => {
@@ -78,7 +106,7 @@ export default function ProfileScreen() {
           bio: editForm.bio.trim() || null,
           location: editForm.location.trim() || null,
           phone: editForm.phone.trim() || null,
-          // experience: editForm.experience.trim() || null, // TODO: Enable after adding experience column to DB
+          experience: editForm.experience.trim() || null,
         })
         .eq('id', profile.id);
 
@@ -293,18 +321,21 @@ export default function ProfileScreen() {
 
             <View style={styles.editActions}>
               <Button title="Save Changes" onPress={handleSave} />
-              <Button 
-                title="Cancel" 
-                onPress={() => setEditing(false)} 
-                variant="outline" 
+              <Button
+                title="Cancel"
+                onPress={() => {
+                  setEditing(false);
+                  resetEditForm();
+                }}
+                variant="outline"
               />
             </View>
           </Card>
         ) : (
           <Card style={styles.actionsCard}>
-            <Button 
-              title="Edit Profile" 
-              onPress={() => setEditing(true)} 
+            <Button
+              title="Edit Profile"
+              onPress={() => setEditing(true)}
               variant="outline"
               style={styles.actionButton}
             />

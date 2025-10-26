@@ -64,7 +64,7 @@ export default function OnboardingScreen() {
         bio: bio.trim() || null,
         location: location.trim() || null,
         phone: phone.trim() || null,
-        // experience: experience.trim() || null, // TODO: Enable after adding experience column to DB
+        experience: experience.trim() || null,
         interests: role === 'student' ? interests : [],
       };
 

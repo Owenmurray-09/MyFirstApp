@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -11,13 +11,22 @@ export default function ApplicationsScreen() {
   const { applications, loading, error } = useApplications();
   const router = useRouter();
 
+  // Only show loading screen on initial load, not on refresh
+  const [hasInitiallyLoaded, setHasInitiallyLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!loading && !hasInitiallyLoaded) {
+      setHasInitiallyLoaded(true);
+    }
+  }, [loading, hasInitiallyLoaded]);
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'accepted':
         return 'success';
       case 'rejected':
         return 'danger';
-      case 'pending':
+      case 'submitted':
         return 'warning';
       default:
         return 'default';
@@ -30,14 +39,14 @@ export default function ApplicationsScreen() {
         return 'Accepted';
       case 'rejected':
         return 'Rejected';
-      case 'pending':
+      case 'submitted':
         return 'Under Review';
       default:
         return status;
     }
   };
 
-  if (loading) {
+  if (loading && !hasInitiallyLoaded) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loading}>

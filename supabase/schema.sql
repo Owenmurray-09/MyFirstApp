@@ -24,6 +24,8 @@ create table if not exists public.companies (
   name text not null,
   description text,
   location text,
+  email text,
+  phone text,
   created_at timestamptz default now()
 );
 create index if not exists companies_owner_idx on public.companies(owner_user_id);
@@ -53,6 +55,8 @@ create table if not exists public.applications (
   job_id uuid not null references public.jobs(id) on delete cascade,
   student_user_id uuid not null references public.profiles(id) on delete cascade,
   note text,
+  contact_email text,
+  contact_phone text,
   status text default 'submitted' check (status in ('submitted','accepted','rejected')),
   created_at timestamptz default now(),
   unique (job_id, student_user_id)

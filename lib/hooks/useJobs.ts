@@ -169,8 +169,7 @@ export function useJob(id: string, signal?: AbortSignal): UseJobReturn {
           )
         `)
         .eq('id', id)
-        .single()
-        .abortSignal(signal);
+        .single();
 
       if (error) throw error;
       setJob(data as Job);

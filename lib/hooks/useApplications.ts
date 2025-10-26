@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { Database } from '@/types/db';
 
@@ -10,10 +10,6 @@ type Application = Database['public']['Tables']['applications']['Row'] & {
     companies: {
       name: string;
     };
-  };
-  students?: {
-    full_name: string;
-    email: string;
   };
 };
 
@@ -44,11 +40,23 @@ export function useApplications(
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Stabilize filters to prevent infinite re-renders
+  const stableFilters = useMemo(() => ({
+    jobId: filters.jobId || undefined,
+  }), [filters.jobId]);
+
   const loadApplications = useCallback(async () => {
     setError(null);
     setLoading(true);
 
     try {
+      // Get current user for filtering
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setApplications([]);
+        return;
+      }
+
       let query = supabase
         .from('applications')
         .select(`
@@ -60,16 +68,13 @@ export function useApplications(
             companies!inner (
               name
             )
-          ),
-          students!inner (
-            full_name,
-            email
           )
         `)
+        .eq('student_user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (filters.jobId) {
-        query = query.eq('job_id', filters.jobId);
+      if (stableFilters.jobId) {
+        query = query.eq('job_id', stableFilters.jobId);
       }
 
       const { data, error } = await query.abortSignal(signal);
@@ -82,7 +87,7 @@ export function useApplications(
     } finally {
       setLoading(false);
     }
-  }, [filters, signal]);
+  }, [stableFilters, signal]);
 
   useEffect(() => {
     loadApplications();
@@ -149,7 +154,7 @@ export function useApply(): UseApplyReturn {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const apply = useCallback(async (jobId: string, note?: string) => {
+  const apply = useCallback(async (jobId: string, note?: string, contactEmail?: string, contactPhone?: string) => {
     setError(null);
     setLoading(true);
 
@@ -169,18 +174,43 @@ export function useApply(): UseApplyReturn {
         throw new Error('You have already applied for this position');
       }
 
-      const applicationData: ApplicationInsert = {
+      // Try with new fields first, fallback to old schema if they don't exist
+      let applicationData: any = {
         job_id: jobId,
         student_user_id: user.id,
         note: note || null,
-        status: 'pending',
+        status: 'submitted',
       };
+
+      // Add contact fields if provided (for new schema)
+      if (contactEmail || contactPhone) {
+        applicationData.contact_email = contactEmail || null;
+        applicationData.contact_phone = contactPhone || null;
+      }
 
       const { error } = await supabase
         .from('applications')
         .insert(applicationData);
 
-      if (error) throw error;
+      if (error) {
+        // If error is due to unknown columns, try without contact fields
+        if (error.message?.includes('column') && (contactEmail || contactPhone)) {
+          const fallbackData = {
+            job_id: jobId,
+            student_user_id: user.id,
+            note: note || null,
+            status: 'submitted',
+          };
+
+          const { error: fallbackError } = await supabase
+            .from('applications')
+            .insert(fallbackData);
+
+          if (fallbackError) throw fallbackError;
+        } else {
+          throw error;
+        }
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to apply for job';
       setError(errorMessage);

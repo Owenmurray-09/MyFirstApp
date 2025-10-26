@@ -91,11 +91,11 @@ export default function StudentLayout() {
         }}
       />
       <Tabs.Screen
-        name="messages"
+        name="calendar"
         options={{
-          title: 'Messages',
+          title: 'Calendar',
           tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="chat" size={size} color={color} />
+            <MaterialIcons name="event" size={size} color={color} />
           ),
         }}
       />
@@ -111,7 +111,7 @@ export default function StudentLayout() {
       <Tabs.Screen
         name="jobs"
         options={{
-          href: null, // Hide this from tabs since it's just for sub-routes
+          href: null,
         }}
       />
     </Tabs>

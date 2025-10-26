@@ -16,6 +16,8 @@ export default function CompanySetupScreen() {
     name: '',
     description: '',
     location: '',
+    email: '',
+    phone: '',
   });
 
   const handleSaveCompany = async () => {
@@ -29,21 +31,60 @@ export default function CompanySetupScreen() {
       return;
     }
 
+    if (!formData.email.trim()) {
+      Alert.alert('Error', 'Please enter a company email for student contact');
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email.trim())) {
+      Alert.alert('Error', 'Please enter a valid email address');
+      return;
+    }
+
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No authenticated user');
 
+      // Try with new schema first, fallback to old schema if contact fields don't exist
+      let companyData: any = {
+        name: formData.name.trim(),
+        description: formData.description.trim(),
+        location: formData.location.trim() || null,
+        owner_user_id: user.id,
+      };
+
+      // Add contact fields if they exist in schema
+      if (formData.email.trim()) {
+        companyData.email = formData.email.trim();
+      }
+      if (formData.phone.trim()) {
+        companyData.phone = formData.phone.trim();
+      }
+
       const { error } = await supabase
         .from('companies')
-        .insert({
+        .insert(companyData);
+
+      if (error && error.message?.includes('column')) {
+        // Fallback to old schema without contact fields
+        const fallbackData = {
           name: formData.name.trim(),
           description: formData.description.trim(),
           location: formData.location.trim() || null,
           owner_user_id: user.id,
-        });
+        };
 
-      if (error) throw error;
+        const { error: fallbackError } = await supabase
+          .from('companies')
+          .insert(fallbackData);
+
+        if (fallbackError) throw fallbackError;
+      } else if (error) {
+        throw error;
+      }
 
       console.log('Company created successfully');
       setCompanySaved(true);
@@ -94,6 +135,23 @@ export default function CompanySetupScreen() {
             value={formData.location}
             onChangeText={(text) => setFormData(prev => ({ ...prev, location: text }))}
             placeholder="e.g. San José, Costa Rica"
+          />
+
+          <Input
+            label="Contact Email *"
+            value={formData.email}
+            onChangeText={(text) => setFormData(prev => ({ ...prev, email: text }))}
+            placeholder="contact@yourcompany.com"
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+
+          <Input
+            label="Contact Phone"
+            value={formData.phone}
+            onChangeText={(text) => setFormData(prev => ({ ...prev, phone: text }))}
+            placeholder="+1 (555) 123-4567"
+            keyboardType="phone-pad"
           />
 
           {!companySaved ? (
