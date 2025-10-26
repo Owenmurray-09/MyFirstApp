@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, ScrollView, Text, Alert, Switch, TouchableOpacity, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -30,6 +30,8 @@ const jobSchema = z.object({
 });
 
 export default function NewJobScreen() {
+  console.log('🔥🔥🔥 NEW JOB SCREEN LOADED - CLAUDE FIXED VERSION 🔥🔥🔥');
+
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
@@ -40,7 +42,9 @@ export default function NewJobScreen() {
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [loadingCompany, setLoadingCompany] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showingValidationError, setShowingValidationError] = useState(false);
 
+  const scrollViewRef = useRef<ScrollView>(null);
   const { createJob, loading: createLoading } = useCreateJob();
   const { uploadImages, loading: uploadLoading, progress } = useUploadJobImages();
 
@@ -136,28 +140,42 @@ export default function NewJobScreen() {
       stipend_amount: isPaid && stipendAmount ? parseFloat(stipendAmount) || 0 : undefined,
     };
 
+    console.log('🔍 VALIDATION DEBUG - Form data:', formData);
+
     try {
       jobSchema.parse(formData);
+      console.log('✅ Validation passed!');
       setErrors({});
-      return true;
+      return { valid: true, errors: {} };
     } catch (error) {
+      console.log('❌ Validation failed, error:', error);
       if (error instanceof z.ZodError && error.errors) {
+        console.log('📝 ZodError details:', error.errors);
         const newErrors: Record<string, string> = {};
         error.errors.forEach((err) => {
+          console.log('Processing error:', err.path, err.message);
           if (err.path[0]) {
             newErrors[err.path[0] as string] = err.message;
           }
         });
+        console.log('📊 Final newErrors object:', newErrors);
         setErrors(newErrors);
+        return { valid: false, errors: newErrors };
       }
-      return false;
+      console.log('⚠️ Non-ZodError validation failure');
+      return { valid: false, errors: {} };
     }
   };
 
   const handleSubmit = async () => {
+    console.log('🔥🔥🔥 HANDLE SUBMIT CALLED!!! 🔥🔥🔥');
     console.log('=== JOB POSTING SUBMIT DEBUG ===');
     console.log('handleSubmit called');
     console.log('Company ID:', companyId);
+    console.log('Form data for validation:');
+    console.log('- Title:', `"${title.trim()}" (length: ${title.trim().length})`);
+    console.log('- Description:', `"${description.trim()}" (length: ${description.trim().length})`);
+    console.log('- Selected tags:', selectedTags);
 
     if (!companyId) {
       console.log('❌ No company ID found');
@@ -167,9 +185,12 @@ export default function NewJobScreen() {
 
     console.log('✅ Company ID exists, skipping validation...');
     // VALIDATION DISABLED
-    // if (!validateForm()) {
+    // const validation = validateForm();
+    // console.log('🔍 VALIDATION RESULT:', validation);
+    // if (!validation.valid) {
     //   console.log('❌ Form validation failed');
-    //   console.log('Validation errors:', errors);
+    //   console.log('Validation errors:', validation.errors);
+    //   // ... all validation logic commented out
     //   return;
     // }
 
@@ -284,9 +305,9 @@ export default function NewJobScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollViewRef} style={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Text style={styles.title}>Post New Job</Text>
+          <Text style={styles.title}>🔥 CLAUDE MODIFIED THIS PAGE 🔥</Text>
           <Text style={styles.subtitle}>Create a job posting to find students</Text>
         </View>
 
@@ -300,6 +321,10 @@ export default function NewJobScreen() {
                 if (errors.title) setErrors(prev => ({ ...prev, title: '' }));
               }}
               placeholder="e.g., Marketing Intern, Server Assistant"
+              style={[
+                errors.title && styles.inputError,
+                showingValidationError && errors.title && styles.inputErrorFlash
+              ]}
             />
             {errors.title && <Text style={styles.errorText}>{errors.title}</Text>}
           </View>
@@ -314,6 +339,10 @@ export default function NewJobScreen() {
               }}
               multiline
               placeholder="Describe the role, responsibilities, and what students will learn..."
+              style={[
+                errors.description && styles.inputError,
+                showingValidationError && errors.description && styles.inputErrorFlash
+              ]}
             />
             {errors.description && <Text style={styles.errorText}>{errors.description}</Text>}
           </View>
@@ -402,8 +431,9 @@ export default function NewJobScreen() {
           
           <View style={styles.actions}>
             <Button
-              title={uploadLoading ? `Uploading Images... ${Math.round(progress)}%` : "Post Job"}
+              title={uploadLoading ? `Uploading Images... ${Math.round(progress)}%` : "🚨 CLAUDE TEST BUTTON 🚨"}
               onPress={() => {
+                alert('🚨 BUTTON CLICKED! 🚨');
                 console.log('📋 Post Job button clicked');
                 console.log('Button state - createLoading:', createLoading, 'uploadLoading:', uploadLoading);
                 handleSubmit();
@@ -545,5 +575,12 @@ const styles = StyleSheet.create({
     color: theme.colors.textSecondary,
     marginTop: theme.spacing.xs,
     fontStyle: 'italic',
+  },
+  inputError: {
+    borderColor: '#ff4444',
+    borderWidth: 2,
+  },
+  inputErrorFlash: {
+    backgroundColor: '#ffeeee',
   },
 });
