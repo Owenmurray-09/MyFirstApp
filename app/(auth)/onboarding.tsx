@@ -11,7 +11,10 @@ import { Tag } from '@/components/ui/Tag';
 
 const STUDENT_INTERESTS = [
   'cash register', 'customer service', 'heavy lifting', 'front desk',
-  'retail', 'barista', 'inventory', 'cleaning', 'basic coding', 'graphic design'
+  'retail', 'barista', 'inventory', 'cleaning', 'basic coding', 'graphic design',
+  'programming', 'web development', 'data analysis', 'healthcare', 'research',
+  'marketing', 'writing', 'tutoring', 'manual labor', 'administrative',
+  'social media', 'photography', 'event planning', 'sales'
 ];
 
 export default function OnboardingScreen() {

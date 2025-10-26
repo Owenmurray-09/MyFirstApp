@@ -114,6 +114,12 @@ export default function StudentLayout() {
           href: null,
         }}
       />
+      <Tabs.Screen
+        name="jobs/[id]"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }
