@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { TextInput, Text, View, StyleSheet, TextInputProps } from 'react-native';
 import { theme } from '@/config/theme';
 
@@ -8,11 +8,12 @@ interface InputProps extends TextInputProps {
   multiline?: boolean;
 }
 
-export const Input: React.FC<InputProps> = ({ label, error, style, multiline, ...props }) => {
+export const Input = forwardRef<TextInput, InputProps>(({ label, error, style, multiline, ...props }, ref) => {
   return (
     <View style={styles.container}>
       {label && <Text style={styles.label}>{label}</Text>}
       <TextInput
+        ref={ref}
         style={[
           styles.input,
           multiline && styles.multiline,
@@ -26,7 +27,7 @@ export const Input: React.FC<InputProps> = ({ label, error, style, multiline, ..
       {error && <Text style={styles.error}>{error}</Text>}
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

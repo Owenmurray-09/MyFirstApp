@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, Alert, TextInput } from 'react-native';
 import { router } from 'expo-router';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { theme } from '@/config/theme';
@@ -13,6 +13,10 @@ export default function SignInScreen() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const { signInWithEmail, signUpWithEmail, loading, error, session, profile } = useAuth();
+
+  // Refs for input focus management
+  const emailInputRef = useRef<TextInput>(null);
+  const passwordInputRef = useRef<TextInput>(null);
 
   // Check if user is already authenticated and redirect appropriately
   useEffect(() => {
@@ -116,20 +120,26 @@ export default function SignInScreen() {
         )}
 
         <Input
+          ref={emailInputRef}
           label="Email"
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
           autoCapitalize="none"
           placeholder="Enter your email"
+          returnKeyType="next"
+          onSubmitEditing={() => passwordInputRef.current?.focus()}
         />
-        
+
         <Input
+          ref={passwordInputRef}
           label="Password"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
           placeholder="Enter your password"
+          returnKeyType="done"
+          onSubmitEditing={handleAuth}
         />
         
         <Button
