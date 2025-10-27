@@ -117,6 +117,10 @@ export default function EmployerHomeScreen() {
     router.push('/(employer)/jobs/new');
   };
 
+  const handleProfile = () => {
+    router.push('/profile');
+  };
+
   const handleLogout = async () => {
     try {
       await signOut();
@@ -172,9 +176,14 @@ export default function EmployerHomeScreen() {
             <Text style={styles.title}>My Jobs</Text>
             <Text style={styles.subtitle}>{jobs.length} jobs posted</Text>
           </View>
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Text style={styles.logoutText}>Logout</Text>
-          </TouchableOpacity>
+          <View style={styles.headerActions}>
+            <TouchableOpacity style={styles.profileButton} onPress={handleProfile}>
+              <Text style={styles.profileText}>Profile</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+              <Text style={styles.logoutText}>Logout</Text>
+            </TouchableOpacity>
+          </View>
         </View>
         <Button
           title="+ Post New Job"
@@ -221,6 +230,21 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: theme.fontSize.md,
     color: theme.colors.textSecondary,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    gap: theme.spacing.sm,
+  },
+  profileButton: {
+    backgroundColor: theme.colors.secondary,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    borderRadius: 8,
+  },
+  profileText: {
+    color: theme.colors.text,
+    fontSize: theme.fontSize.sm,
+    fontWeight: theme.fontWeight.medium,
   },
   logoutButton: {
     backgroundColor: theme.colors.accent,

@@ -3,6 +3,7 @@ import { View, StyleSheet, ScrollView, Text, Alert, Switch, TouchableOpacity } f
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/lib/hooks/useAuth';
 import { theme } from '@/config/theme';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -24,6 +25,7 @@ interface Profile {
 }
 
 export default function ProfileScreen() {
+  const { signOut } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -121,21 +123,14 @@ export default function ProfileScreen() {
   };
 
   const handleSignOut = async () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: async () => {
-            await supabase.auth.signOut();
-            router.replace('/(auth)/sign-in');
-          },
-        },
-      ]
-    );
+    try {
+      await signOut();
+      console.log('Logged out successfully');
+      // Navigate to sign-in page after successful logout
+      router.replace('/(auth)/sign-in');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
   const handleDailyDigestToggle = async (enabled: boolean) => {
