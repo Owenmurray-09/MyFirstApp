@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -11,7 +11,9 @@ import { supabase } from '@/lib/supabase';
 export default function CompanySetupScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [loadingData, setLoadingData] = useState(true);
   const [companySaved, setCompanySaved] = useState(false);
+  const [existingCompany, setExistingCompany] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -20,74 +22,110 @@ export default function CompanySetupScreen() {
     phone: '',
   });
 
+  useEffect(() => {
+    loadExistingCompany();
+  }, []);
+
+  const loadExistingCompany = async () => {
+    console.log('🔄 loadExistingCompany called');
+    try {
+      console.log('🔄 Getting user for company load...');
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.log('❌ No user found');
+        return;
+      }
+      console.log('✅ User found for load:', user.id);
+
+      console.log('🔄 Querying companies table...');
+      const { data: company, error } = await supabase
+        .from('companies')
+        .select('*')
+        .eq('owner_user_id', user.id)
+        .single();
+
+      console.log('🔄 Company query result:', { company, error });
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('❌ Error loading company:', error);
+        return;
+      }
+
+      if (company) {
+        console.log('✅ Company found, updating state...');
+        setExistingCompany(company);
+        setFormData({
+          name: company.name || '',
+          description: company.description || '',
+          location: company.location || '',
+          email: company.email || '',
+          phone: company.phone || '',
+        });
+        setCompanySaved(true);
+        console.log('✅ Company data loaded successfully');
+      } else {
+        console.log('ℹ️ No company found (new user)');
+      }
+    } catch (error) {
+      console.error('❌ Error loading company:', error);
+    } finally {
+      console.log('🔄 Setting loadingData to false');
+      setLoadingData(false);
+    }
+  };
+
   const handleSaveCompany = async () => {
-    if (!formData.name.trim()) {
-      Alert.alert('Error', 'Please enter a company name');
-      return;
-    }
+    console.log('🔄 handleSaveCompany called');
+    console.log('Form data:', formData);
+    console.log('Existing company:', existingCompany);
 
-    if (!formData.description.trim()) {
-      Alert.alert('Error', 'Please enter a company description');
-      return;
-    }
-
-    if (!formData.email.trim()) {
-      Alert.alert('Error', 'Please enter a company email for student contact');
-      return;
-    }
-
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email.trim())) {
-      Alert.alert('Error', 'Please enter a valid email address');
-      return;
-    }
-
+    console.log('🔄 Starting save process...');
     setLoading(true);
     try {
+      console.log('🔄 Getting user...');
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No authenticated user');
+      console.log('✅ User found:', user.id);
 
-      // Try with new schema first, fallback to old schema if contact fields don't exist
-      let companyData: any = {
+      const companyData = {
         name: formData.name.trim(),
         description: formData.description.trim(),
         location: formData.location.trim() || null,
-        owner_user_id: user.id,
+        email: formData.email.trim() || null,
+        phone: formData.phone.trim() || null,
       };
+      console.log('🔄 Company data prepared:', companyData);
 
-      // Add contact fields if they exist in schema
-      if (formData.email.trim()) {
-        companyData.email = formData.email.trim();
-      }
-      if (formData.phone.trim()) {
-        companyData.phone = formData.phone.trim();
-      }
-
-      const { error } = await supabase
-        .from('companies')
-        .insert(companyData);
-
-      if (error && error.message?.includes('column')) {
-        // Fallback to old schema without contact fields
-        const fallbackData = {
-          name: formData.name.trim(),
-          description: formData.description.trim(),
-          location: formData.location.trim() || null,
-          owner_user_id: user.id,
-        };
-
-        const { error: fallbackError } = await supabase
+      if (existingCompany) {
+        console.log('🔄 Updating existing company...');
+        // Update existing company
+        const { error } = await supabase
           .from('companies')
-          .insert(fallbackData);
+          .update(companyData)
+          .eq('id', existingCompany.id);
 
-        if (fallbackError) throw fallbackError;
-      } else if (error) {
-        throw error;
+        if (error) throw error;
+        console.log('✅ Company updated successfully');
+      } else {
+        console.log('🔄 Creating new company...');
+        // Create new company
+        const { error } = await supabase
+          .from('companies')
+          .insert({
+            ...companyData,
+            owner_user_id: user.id,
+          });
+
+        if (error) throw error;
+        console.log('✅ Company created successfully');
       }
 
-      console.log('Company created successfully');
+      console.log('🔄 Setting companySaved to true...');
       setCompanySaved(true);
+      console.log('🔄 Reloading company data...');
+      // Reload the company data to get the latest version
+      await loadExistingCompany();
+      console.log('✅ Save process completed!');
     } catch (error: any) {
       console.error('Company creation error:', error);
       Alert.alert('Error', error.message);
@@ -101,13 +139,28 @@ export default function CompanySetupScreen() {
     router.replace('/(employer)/');
   };
 
+  if (loadingData) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading company information...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Text style={styles.title}>Setup Your Company</Text>
+          <Text style={styles.title}>
+            {existingCompany ? 'Edit Company Profile' : 'Setup Your Company'}
+          </Text>
           <Text style={styles.subtitle}>
-            Create your company profile to start posting jobs
+            {existingCompany
+              ? 'Update your company information'
+              : 'Create your company profile to start posting jobs'
+            }
           </Text>
         </View>
 
@@ -156,7 +209,7 @@ export default function CompanySetupScreen() {
 
           {!companySaved ? (
             <Button
-              title="Save Company Profile"
+              title={existingCompany ? "Update Company Profile" : "Save Company Profile"}
               onPress={handleSaveCompany}
               loading={loading}
               style={styles.submitButton}
@@ -203,6 +256,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: theme.fontSize.lg,
+    color: theme.colors.textSecondary,
   },
   scroll: {
     flex: 1,

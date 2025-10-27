@@ -121,6 +121,10 @@ export default function EmployerHomeScreen() {
     router.push('/profile');
   };
 
+  const handleCompanyProfile = () => {
+    router.push('/(employer)/company/setup');
+  };
+
   const handleLogout = async () => {
     try {
       await signOut();
@@ -179,6 +183,9 @@ export default function EmployerHomeScreen() {
           <View style={styles.headerActions}>
             <TouchableOpacity style={styles.profileButton} onPress={handleProfile}>
               <Text style={styles.profileText}>Profile</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.companyButton} onPress={handleCompanyProfile}>
+              <Text style={styles.companyText}>Company Profile</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
               <Text style={styles.logoutText}>Logout</Text>
@@ -242,6 +249,17 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   profileText: {
+    color: theme.colors.text,
+    fontSize: theme.fontSize.sm,
+    fontWeight: theme.fontWeight.medium,
+  },
+  companyButton: {
+    backgroundColor: theme.colors.secondary,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    borderRadius: 8,
+  },
+  companyText: {
     color: theme.colors.text,
     fontSize: theme.fontSize.sm,
     fontWeight: theme.fontWeight.medium,
